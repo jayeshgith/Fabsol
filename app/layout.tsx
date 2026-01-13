@@ -1,14 +1,22 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Poppins } from "next/font/google";
 import "./globals.css";
+import Link from "next/link";
+import { LandmarkIcon } from "lucide-react";
+import {
+  ClerkProvider,
+  SignedIn,
+  SignedOut,
+  SignInButton,
+  SignUpButton,
+} from "@clerk/nextjs";
+import { Button } from "@/components/ui/button";
+import UserDropdown from "./user-dropdown";
+import { Toaster } from "@/components/ui/sonner";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const poppins = Poppins({
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
+  variable: "--font-poppins",
   subsets: ["latin"],
 });
 
@@ -23,12 +31,44 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en">
+        <body className={`${poppins.variable} antialiased`}>
+          <nav className="bg-primary p-8 text-white h-20 flex items-center justify-between">
+            <Link
+              href="/"
+              className="text-2xl font-bold gap-2 flex items-center">
+              <LandmarkIcon className="text-lime-500" />
+              PinTrust
+            </Link>
+            <div>
+              <SignedOut>
+                <div className="flex items-center">
+                  <Button
+                    asChild
+                    variant="link"
+                    className="mr-4 text-white text-xl">
+                    <SignInButton />
+                  </Button>
+                  <Button
+                    asChild
+                    variant="link"
+                    className="mr-4 text-white text-xl">
+                    <SignUpButton />
+                  </Button>
+                </div>
+              </SignedOut>
+              <SignedIn>
+                <div className="flex items-center gap-4">
+                  <UserDropdown />
+                </div>
+              </SignedIn>
+            </div>
+          </nav>
+          {children}
+          <Toaster position="bottom-right" />
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
