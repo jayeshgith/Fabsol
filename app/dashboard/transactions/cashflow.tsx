@@ -6,9 +6,10 @@ import CashFlowContent from "./cashflow-content";
 
 const CashFlow = async ({ year }: { year: number }) => {
   const [cashflow, yearsRange] = await Promise.all([
-    await getAnnualCashflow(year),
-    await getTransactionYearsRange(),
+    getAnnualCashflow(year),
+    getTransactionYearsRange(),
   ]);
+
   console.log("CashFlow Rendered with year:", cashflow);
   console.log("Years Range:", yearsRange);
 

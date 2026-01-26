@@ -1,33 +1,27 @@
-import { db } from "@/db";
-import { categoriesTable, transactionsTable } from "@/db/schema";
-import { auth } from "@clerk/nextjs/server";
-import { desc, eq } from "drizzle-orm";
 import "server-only";
+import { auth } from "@clerk/nextjs/server";
+import { connectDB } from "@/lib/db";
+import { Transaction } from "@/models/Transaction";
+import { Category } from "@/models/Category"; // ✅ force model registration
 
 export async function getRecentTransactions() {
   const { userId } = await auth();
+  if (!userId) return [];
 
-  if (!userId) {
-    return [];
-  }
+  await connectDB();
 
-  const transactions = await db
-    .select({
-      id: transactionsTable.id,
-      description: transactionsTable.description,
-      amount: transactionsTable.amount,
-      transactionDate: transactionsTable.transactionDate,
-      category: categoriesTable.name,
-      transactionType: categoriesTable.type,
-    })
-    .from(transactionsTable)
-    .where(eq(transactionsTable.userId, userId))
-    .orderBy(desc(transactionsTable.transactionDate))
+  const transactions = await Transaction.find({ userId })
+    .populate("category", "name type")
+    .sort({ transactionDate: -1 })
     .limit(5)
-    .leftJoin(
-      categoriesTable,
-      eq(transactionsTable.categoryId, categoriesTable.id)
-    );
+    .lean();
 
-  return transactions;
+  return transactions.map((t: any) => ({
+    id: t._id.toString(),
+    description: t.description,
+    amount: t.amount,
+    transactionDate: t.transactionDate,
+    category: t.category?.name ?? "Unknown",
+    transactionType: t.transactionType ?? t.category?.type ?? "expense",
+  }));
 }

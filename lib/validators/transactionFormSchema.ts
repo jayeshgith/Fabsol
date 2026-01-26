@@ -3,12 +3,13 @@ import z from "zod";
 
 export const transactionFormSchema = z.object({
   transactionType: z.enum(["income", "expense"]),
-  categoryId: z.coerce.number().positive("Please select a valid category."),
+  categoryId: z.string().min(1, "Please select a valid category"),
+
   transactionDate: z.coerce
     .date()
     .max(
       Number(addDays(new Date(), 1)),
-      "Transaction date cannot be in the future."
+      "Transaction date cannot be in the future.",
     ),
   amount: z.coerce.number().positive("Amount must be a positive number."),
   description: z

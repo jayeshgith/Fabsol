@@ -1,89 +1,77 @@
 "use server";
 
-import { db } from "@/db";
-import { transactionsTable } from "@/db/schema";
-import { transactionSchema } from "@/lib/validators/transactionSchema";
+import { connectDB } from "@/lib/db";
+import { Transaction } from "@/models/Transaction";
+import { transactionFormSchema } from "@/lib/validators/transactionFormSchema";
 import { auth } from "@clerk/nextjs/server";
-import { and, eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import z from "zod";
 
-const updateTransactionSchema = transactionSchema.and(
-  z.object({
-    id: z.number(),
-  })
-);
+const updateSchema = transactionFormSchema.extend({
+  id: z.string().min(1, "Missing transaction id"),
+});
 
-export async function updateTransactionAction(data: {
-  id: number;
-  amount: number;
-  categoryId: number;
-  transactionDate: string;
-  description: string;
-}) {
-  const { userId } = await auth();
-  if (!userId) {
-    return {
-      success: false,
-      message: "User not authenticated.",
-    };
-  }
+export async function updateTransactionAction(data: unknown) {
+  try {
+    const { userId } = await auth();
+    if (!userId) return { success: false, message: "User not authenticated." };
 
-  const parsedData = updateTransactionSchema.safeParse(data);
+    const parsed = updateSchema.parse(data);
 
-  console.log("Parsed data for update:", parsedData);
+    await connectDB();
 
-  if (!parsedData.success) {
-    return {
-      success: false,
-      message: parsedData.error.issues[0].message,
-    };
-  }
-
-  console.log("Updating transaction with data:", parsedData.data);
-
-  await db
-    .update(transactionsTable)
-    .set({
-      description: parsedData.data.description,
-      amount: parsedData.data.amount.toString(),
-      categoryId: parsedData.data.categoryId,
-      transactionDate: new Date(parsedData.data.transactionDate).toISOString(),
-    })
-    .where(
-      and(
-        eq(transactionsTable.id, parsedData.data.id),
-        eq(transactionsTable.userId, userId)
-      )
+    const updated = await Transaction.findOneAndUpdate(
+      { _id: parsed.id, userId },
+      {
+        description: parsed.description,
+        amount: parsed.amount,
+        transactionDate: parsed.transactionDate,
+        category: parsed.categoryId,
+        transactionType: parsed.transactionType,
+      },
+      { new: true },
     );
 
-  console.log("Transaction updated successfully:", parsedData.data.id);
+    if (!updated) {
+      return { success: false, message: "Transaction not found." };
+    }
 
-  return {
-    success: true,
-    message: "Transaction updated successfully.",
-  };
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/transactions");
+
+    return { success: true, message: "Transaction updated successfully." };
+  } catch (error: any) {
+    console.error("Update transaction error:", error);
+    return {
+      success: false,
+      message: error?.message ?? "Something went wrong",
+    };
+  }
 }
 
-export async function deleteTransactionAction(transactionId: number) {
-  const { userId } = await auth();
-  if (!userId) {
+export async function deleteTransactionAction(transactionId: string) {
+  try {
+    const { userId } = await auth();
+    if (!userId) return { success: false, message: "User not authenticated." };
+
+    await connectDB();
+
+    const deleted = await Transaction.findOneAndDelete({
+      _id: transactionId,
+      userId,
+    });
+
+    if (!deleted) return { success: false, message: "Transaction not found." };
+
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/transactions");
+
+    return { success: true, message: "Transaction deleted successfully." };
+  } catch (error: any) {
+    console.error("Delete transaction error:", error);
     return {
       success: false,
-      message: "User not authenticated.",
+      message: error?.message ?? "Something went wrong",
     };
   }
-
-  await db
-    .delete(transactionsTable)
-    .where(
-      and(
-        eq(transactionsTable.id, transactionId),
-        eq(transactionsTable.userId, userId)
-      )
-    );
-
-  return {
-    success: true,
-    message: "Transaction deleted successfully.",
-  };
 }

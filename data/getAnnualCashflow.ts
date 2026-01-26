@@ -1,56 +1,57 @@
-import { db } from "@/db";
-import { categoriesTable, transactionsTable } from "@/db/schema";
-import { auth } from "@clerk/nextjs/server";
-import { and, eq, sql, sum } from "drizzle-orm";
 import "server-only";
+import { auth } from "@clerk/nextjs/server";
+import { connectDB } from "@/lib/db";
+import { Transaction } from "@/models/Transaction";
 
 export async function getAnnualCashflow(year: number) {
   const { userId } = await auth();
+  if (!userId) return [];
 
-  if (!userId) {
-    return [];
-  }
+  await connectDB();
 
-  const month = sql`EXTRACT(MONTH FROM ${transactionsTable.transactionDate})`;
+  const start = new Date(year, 0, 1);
+  const end = new Date(year + 1, 0, 1);
 
-  const cashflow = await db
-    .select({
-      month,
-      totalIncome: sum(
-        sql`CASE WHEN ${categoriesTable.type} = 'income' THEN ${transactionsTable.amount} ELSE 0 END`
-      ),
-      totalExpense: sum(
-        sql`CASE WHEN ${categoriesTable.type} = 'expense' THEN ${transactionsTable.amount} ELSE 0 END`
-      ),
-    })
-    .from(transactionsTable)
-    .leftJoin(
-      categoriesTable,
-      eq(transactionsTable.categoryId, categoriesTable.id)
-    )
-    .where(
-      and(
-        eq(transactionsTable.userId, userId),
-        sql`EXTRACT(YEAR FROM ${transactionsTable.transactionDate}) = ${year}`
-      )
-    )
-    .groupBy(month)
-    .orderBy(month);
 
-  const annualCashflow: {
+  const rows = await Transaction.aggregate([
+    {
+      $match: {
+        userId,
+        transactionDate: { $gte: start, $lt: end },
+      },
+    },
+    {
+      $group: {
+        _id: {
+          month: { $month: "$transactionDate" },
+          type: "$transactionType", 
+        },
+        total: { $sum: "$amount" },
+      },
+    },
+  ]);
+
+  const result: {
     month: number;
     totalIncome: number;
     totalExpenses: number;
   }[] = [];
 
   for (let m = 1; m <= 12; m++) {
-    const monthlyCashflow = cashflow.find((c) => Number(c.month) === m);
-    annualCashflow.push({
+    const totalIncome =
+      rows.find((r: any) => r._id.month === m && r._id.type === "income")
+        ?.total ?? 0;
+
+    const totalExpenses =
+      rows.find((r: any) => r._id.month === m && r._id.type === "expense")
+        ?.total ?? 0;
+
+    result.push({
       month: m,
-      totalIncome: Number(monthlyCashflow?.totalIncome) || 0,
-      totalExpenses: Number(monthlyCashflow?.totalExpense) || 0,
+      totalIncome: Number(totalIncome),
+      totalExpenses: Number(totalExpenses),
     });
   }
 
-  return annualCashflow;
+  return result;
 }

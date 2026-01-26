@@ -20,10 +20,11 @@ const DeleteTransactionDialog = ({
   transactionId,
   transactionDate,
 }: {
-  transactionId: number;
+  transactionId: string;
   transactionDate: string;
 }) => {
   const router = useRouter();
+
   const handleDeleteTransaction = async () => {
     const response = await deleteTransactionAction(transactionId);
     if (!response.success) {
@@ -47,6 +48,7 @@ const DeleteTransactionDialog = ({
           <Trash2Icon className="h-4 w-4" />
         </Button>
       </AlertDialogTrigger>
+
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
@@ -57,6 +59,7 @@ const DeleteTransactionDialog = ({
             This action cannot be undone. Please confirm if you want to proceed.
           </AlertDialogDescription>
         </AlertDialogHeader>
+
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <Button variant="destructive" onClick={handleDeleteTransaction}>

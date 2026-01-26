@@ -15,29 +15,28 @@ const NewTransactionForm = ({ categories }: { categories: Category[] }) => {
     const result = await createTransactionAction({
       transactionType: data.transactionType,
       amount: Number(data.amount),
-      categoryId: Number(data.categoryId),
-      transactionDate: (data.transactionDate as Date).toISOString(),
+      categoryId: data.categoryId, 
+      transactionDate: data.transactionDate, 
       description: data.description,
     });
 
     if (result.success) {
-      toast.success("Transaction created successfully.", {
-        duration: 4000,
-      });
+      toast.success("Transaction created successfully.", { duration: 4000 });
+
       router.push(
         "/dashboard/transactions?month=" +
           (new Date().getMonth() + 1) +
           "&year=" +
-          new Date().getFullYear()
+          new Date().getFullYear(),
       );
     } else {
-      console.log("Transaction creation failed:", result.message);
       toast.error("Failed to create transaction.", {
         description: result.message,
         duration: 4000,
       });
     }
   };
+
   return <TransactionForm categories={categories} onsubmit={handleSubmit} />;
 };
 

@@ -1,25 +1,26 @@
-import { db } from "@/db";
-import { transactionsTable } from "@/db/schema";
-import { auth } from "@clerk/nextjs/server";
-import { and, eq } from "drizzle-orm";
 import "server-only";
+import { auth } from "@clerk/nextjs/server";
+import { connectDB } from "@/lib/db";
+import { Transaction } from "@/models/Transaction";
 
-export async function getTransaction(transactionId: number) {
+export async function getTransaction(transactionId: string) {
   const { userId } = await auth();
+  if (!userId) return null;
 
-  if (!userId) {
-    return null;
-  }
+  await connectDB();
 
-  const [transaction] = await db
-    .select()
-    .from(transactionsTable)
-    .where(
-      and(
-        eq(transactionsTable.userId, userId),
-        eq(transactionsTable.id, transactionId)
-      )
-    );
+  const tx = await Transaction.findOne({ _id: transactionId, userId })
+    .populate("category", "name type")
+    .lean();
 
-  return transaction;
+  if (!tx) return null;
+
+  return {
+    id: tx._id.toString(),
+    description: tx.description,
+    amount: tx.amount,
+    transactionDate: tx.transactionDate,
+    transactionType: tx.transactionType,
+    categoryId: tx.category?._id?.toString(), // for select default
+  };
 }

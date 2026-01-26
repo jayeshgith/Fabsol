@@ -7,12 +7,30 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getCategories } from "@/data/getCategories";
 import Link from "next/link";
 import NewTransactionForm from "./new-transaction-form";
 
+import { connectDB } from "@/lib/db";
+import { Category } from "@/models/Category";
+// import { Category } from "@/types/Category";
+// import Category  from "@/models/Category";
+
 const NewTransactionPage = async () => {
-  const categories = await getCategories();
+  await connectDB();
+ 
+
+
+  const categories = await Category.find().lean();
+   console.log("CATEGORIES FROM DB:", categories.length);
+   console.log("FIRST:", categories[0]);
+
+  
+  const safeCategories = categories.map((c: any) => ({
+    _id: c._id.toString(),
+    name: c.name,
+    type: c.type,
+  }));
+
   return (
     <div className="max-w-7xl mx-auto py-10">
       <Breadcrumb>
@@ -34,12 +52,13 @@ const NewTransactionPage = async () => {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
+
       <Card className="mt-8 p-6 max-w-3xl">
         <CardHeader className="text-2xl font-bold">
           <CardTitle>New Transaction</CardTitle>
         </CardHeader>
         <CardContent>
-          <NewTransactionForm categories={categories} />
+          <NewTransactionForm categories={safeCategories} />
         </CardContent>
       </Card>
     </div>

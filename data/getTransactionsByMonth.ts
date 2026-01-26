@@ -1,8 +1,7 @@
-import { db } from "@/db";
-import { categoriesTable, transactionsTable } from "@/db/schema";
-import { auth } from "@clerk/nextjs/server";
-import { and, desc, eq, gte, lte } from "drizzle-orm";
 import "server-only";
+import { auth } from "@clerk/nextjs/server";
+import { connectDB } from "@/lib/db";
+import { Transaction } from "@/models/Transaction";
 
 export async function getTransactionsByMonth({
   year,
@@ -12,36 +11,27 @@ export async function getTransactionsByMonth({
   month: number;
 }) {
   const { userId } = await auth();
+  if (!userId) return [];
 
-  if (!userId) {
-    return null;
-  }
+  await connectDB();
 
-  const earliestDate = new Date(year, month - 1, 1).toISOString();
-  const latestDate = new Date(year, month, 0).toISOString();
+  const start = new Date(year, month - 1, 1);
+  const end = new Date(year, month, 1); // next month start
 
-  const transactions = await db
-    .select({
-      id: transactionsTable.id,
-      description: transactionsTable.description,
-      amount: transactionsTable.amount,
-      transactionDate: transactionsTable.transactionDate,
-      category: categoriesTable.name,
-      transactionType: categoriesTable.type,
-    })
-    .from(transactionsTable)
-    .where(
-      and(
-        eq(transactionsTable.userId, userId),
-        gte(transactionsTable.transactionDate, earliestDate),
-        lte(transactionsTable.transactionDate, latestDate)
-      )
-    )
-    .orderBy(desc(transactionsTable.transactionDate))
-    .leftJoin(
-      categoriesTable,
-      eq(transactionsTable.categoryId, categoriesTable.id)
-    );
+  const transactions = await Transaction.find({
+    userId,
+    transactionDate: { $gte: start, $lt: end },
+  })
+    .populate("category", "name type")
+    .sort({ transactionDate: -1 })
+    .lean();
 
-  return transactions;
+  return transactions.map((t: any) => ({
+    id: t._id.toString(),
+    description: t.description,
+    amount: t.amount,
+    transactionDate: t.transactionDate,
+    category: t.category?.name ?? "Unknown",
+    transactionType: t.category?.type ?? "expense",
+  }));
 }

@@ -1,8 +1,8 @@
-import { db } from "@/db";
-import { categoriesTable } from "@/db/schema";
 import "server-only";
+import { connectDB } from "@/lib/db";
+import { Category } from "@/models/Category";
 
 export async function getCategories() {
-  const categories = await db.select().from(categoriesTable);
-  return categories;
+  await connectDB();
+  return Category.find().lean();
 }

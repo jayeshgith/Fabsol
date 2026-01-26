@@ -1,53 +1,45 @@
 "use server";
 
-import { db } from "@/db";
-import { transactionsTable } from "@/db/schema";
-import { transactionSchema } from "@/lib/validators/transactionSchema";
+import { connectDB } from "@/lib/db";
+import { Transaction } from "@/models/Transaction";
+import { transactionFormSchema } from "@/lib/validators/transactionFormSchema";
 import { auth } from "@clerk/nextjs/server";
+import { revalidatePath } from "next/cache";
 
-export const createTransactionAction = async (data: {
-  transactionType: string;
-  amount: number;
-  categoryId: number;
-  transactionDate: string;
-  description: string;
-}) => {
-  console.log("Data received in action:", data);
-  const { userId } = await auth();
-  if (!userId) {
-    return {
-      success: false,
-      message: "User not authenticated.",
-    };
-  }
+export const createTransactionAction = async (data: unknown) => {
+  try {
+    const { userId } = await auth(); 
 
-  const parsedData = transactionSchema.safeParse(data);
+    if (!userId) {
+      return { success: false, message: "User not authenticated." };
+    }
 
-  if (!parsedData.success) {
-    return {
-      success: false,
-      message: parsedData.error.issues[0].message,
-    };
-  }
+    const parsed = transactionFormSchema.parse(data);
 
-  console.log("Parsed data:", parsedData.data);
+    await connectDB();
 
-  const [transaction] = await db
-    .insert(transactionsTable)
-    .values({
+    const transaction = await Transaction.create({
       userId,
-      amount: parsedData.data.amount.toString(),
-      categoryId: parsedData.data.categoryId,
-      transactionDate: parsedData.data.transactionDate.toISOString(),
-      description: parsedData.data.description,
-    })
-    .returning();
+      transactionType: parsed.transactionType,
+      amount: parsed.amount,
+      description: parsed.description,
+      transactionDate: parsed.transactionDate,
+      category: parsed.categoryId,
+    });
 
-  console.log("Inserted transaction:", transaction);
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/transactions");
 
-  return {
-    success: true,
-    transactionId: transaction.id,
-    message: "Transaction created successfully.",
-  };
+    return {
+      success: true,
+      transactionId: transaction._id.toString(),
+      message: "Transaction created successfully.",
+    };
+  } catch (error: any) {
+    console.error("Create transaction error:", error);
+    return {
+      success: false,
+      message: error?.message ?? "Something went wrong",
+    };
+  }
 };

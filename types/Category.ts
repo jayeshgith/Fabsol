@@ -1,5 +1,5 @@
 export type Category = {
-  id: number;
+  _id: string;
   name: string;
   type: "income" | "expense";
 };

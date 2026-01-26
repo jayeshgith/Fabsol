@@ -27,7 +27,8 @@ import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Input } from "./ui/input";
-import { type Category } from "@/types/Category";
+// import { Category } from "@/models/Category";
+import { Category } from "@/types/Category";
 
 type Props = {
   categories: Category[];
@@ -46,7 +47,7 @@ const TransactionForm = ({ categories, onsubmit, defaultValues }: Props) => {
     resolver: zodResolver(transactionFormSchema),
     defaultValues: {
       amount: 0,
-      categoryId: 0,
+      categoryId: "",
       description: "",
       transactionDate: new Date(),
       transactionType: "income",
@@ -58,8 +59,14 @@ const TransactionForm = ({ categories, onsubmit, defaultValues }: Props) => {
     control: form.control,
     name: "transactionType",
   });
+  console.log("CATEGORIES PROP LENGTH:", categories?.length);
+  console.log("SAMPLE CATEGORY:", categories?.[0]);
+
   const filteredCategories = categories.filter(
-    (category) => category.type === transactionType
+  
+    (category) => category.type === transactionType,
+
+    
   );
 
   console.log("Form data:", form.getValues());
@@ -69,7 +76,8 @@ const TransactionForm = ({ categories, onsubmit, defaultValues }: Props) => {
       <form onSubmit={form.handleSubmit(onsubmit)}>
         <fieldset
           disabled={form.formState.isSubmitting}
-          className="grid grid-cols-2 gap-y-5 gap-x-2 items-start">
+          className="grid grid-cols-2 gap-y-5 gap-x-2 items-start"
+        >
           <FormField
             control={form.control}
             name="transactionType"
@@ -83,7 +91,8 @@ const TransactionForm = ({ categories, onsubmit, defaultValues }: Props) => {
                         field.onChange(newValue);
                         form.setValue("categoryId", 0);
                       }}
-                      value={field.value}>
+                      value={field.value}
+                    >
                       <SelectTrigger className="w-full">
                         <SelectValue />
                       </SelectTrigger>
@@ -106,17 +115,13 @@ const TransactionForm = ({ categories, onsubmit, defaultValues }: Props) => {
                 <FormItem>
                   <FormLabel>Category</FormLabel>
                   <FormControl>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value?.toString()}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <SelectTrigger className="w-full">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         {filteredCategories.map((category) => (
-                          <SelectItem
-                            key={category.id}
-                            value={category.id.toString()}>
+                          <SelectItem key={category._id} value={category._id}>
                             {category.name}
                           </SelectItem>
                         ))}
@@ -143,8 +148,9 @@ const TransactionForm = ({ categories, onsubmit, defaultValues }: Props) => {
                           data-empty={!field.value}
                           className={cn(
                             "w-full data-[empty=true]:text-muted-foreground justify-start text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}>
+                            !field.value && "text-muted-foreground",
+                          )}
+                        >
                           <CalendarIcon className="mr-2 h-4 w-4" />
                           {field.value ? (
                             format(field.value as string, "PPP")
@@ -191,7 +197,8 @@ const TransactionForm = ({ categories, onsubmit, defaultValues }: Props) => {
         </fieldset>
         <fieldset
           disabled={form.formState.isSubmitting}
-          className="mt-5 flex flex-col gap-5">
+          className="mt-5 flex flex-col gap-5"
+        >
           <FormField
             control={form.control}
             name="description"
