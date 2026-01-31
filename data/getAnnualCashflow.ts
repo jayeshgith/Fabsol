@@ -1,17 +1,22 @@
 import "server-only";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
 import { Transaction } from "@/models/Transaction";
 
 export async function getAnnualCashflow(year: number) {
-  const { userId } = await auth();
-  if (!userId) return [];
+ 
+  const session = await auth();
+
+  if (!session?.user) return [];
+
+  
+  const userId = session.user.email!;
+
 
   await connectDB();
 
   const start = new Date(year, 0, 1);
   const end = new Date(year + 1, 0, 1);
-
 
   const rows = await Transaction.aggregate([
     {
@@ -24,7 +29,7 @@ export async function getAnnualCashflow(year: number) {
       $group: {
         _id: {
           month: { $month: "$transactionDate" },
-          type: "$transactionType", 
+          type: "$transactionType",
         },
         total: { $sum: "$amount" },
       },

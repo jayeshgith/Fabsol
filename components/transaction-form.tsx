@@ -59,8 +59,8 @@ const TransactionForm = ({ categories, onsubmit, defaultValues }: Props) => {
     control: form.control,
     name: "transactionType",
   });
-  console.log("CATEGORIES PROP LENGTH:", categories?.length);
-  console.log("SAMPLE CATEGORY:", categories?.[0]);
+  // console.log("CATEGORIES PROP LENGTH:", categories?.length);
+  // console.log("SAMPLE CATEGORY:", categories?.[0]);
 
   const filteredCategories = categories.filter(
   

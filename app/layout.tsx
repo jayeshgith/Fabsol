@@ -3,15 +3,8 @@ import { Poppins } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
 import { LandmarkIcon } from "lucide-react";
-import {
-  ClerkProvider,
-  SignedIn,
-  SignedOut,
-  SignInButton,
-  SignUpButton,
-} from "@clerk/nextjs";
-import { Button } from "@/components/ui/button";
-import UserDropdown from "./user-dropdown";
+import Providers from "./providers";
+import AuthButtons from "./auth-buttons";
 import { Toaster } from "@/components/ui/sonner";
 
 const poppins = Poppins({
@@ -31,44 +24,27 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
-      <html lang="en">
-        <body className={`${poppins.variable} antialiased`}>
+    <html lang="en">
+      <body className={`${poppins.variable} antialiased`}>
+        <Providers>
           <nav className="bg-primary p-8 text-white h-20 flex items-center justify-between">
             <Link
               href="/"
-              className="text-2xl font-bold gap-2 flex items-center">
+              className="text-2xl font-bold gap-2 flex items-center"
+            >
               <LandmarkIcon className="text-lime-500" />
               PinTrust
             </Link>
+
             <div>
-              <SignedOut>
-                <div className="flex items-center">
-                  <Button
-                    asChild
-                    variant="link"
-                    className="mr-4 text-white text-xl">
-                    <SignInButton />
-                  </Button>
-                  <Button
-                    asChild
-                    variant="link"
-                    className="mr-4 text-white text-xl">
-                    <SignUpButton />
-                  </Button>
-                </div>
-              </SignedOut>
-              <SignedIn>
-                <div className="flex items-center gap-4">
-                  <UserDropdown />
-                </div>
-              </SignedIn>
+              <AuthButtons />
             </div>
           </nav>
+
           {children}
           <Toaster position="bottom-right" />
-        </body>
-      </html>
-    </ClerkProvider>
+        </Providers>
+      </body>
+    </html>
   );
 }

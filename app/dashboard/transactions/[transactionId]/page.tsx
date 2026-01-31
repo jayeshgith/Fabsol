@@ -38,7 +38,7 @@ const EditTransactionPage = async ({
     description: tx.description,
     transactionDate: tx.transactionDate,
     categoryId: tx.category?._id?.toString() ?? "",
-    transactionType: tx.transactionType, // if present in schema
+    transactionType: tx.transactionType, 
   };
 
   return (

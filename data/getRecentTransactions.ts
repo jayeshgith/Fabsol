@@ -1,12 +1,18 @@
 import "server-only";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
 import { Transaction } from "@/models/Transaction";
-import { Category } from "@/models/Category"; // ✅ force model registration
+import { Category } from "@/models/Category"; 
 
 export async function getRecentTransactions() {
-  const { userId } = await auth();
-  if (!userId) return [];
+  
+  const session = await auth();
+
+  if (!session?.user) return [];
+
+  
+  const userId = session.user.email!;
+
 
   await connectDB();
 

@@ -3,7 +3,7 @@
 import { connectDB } from "@/lib/db";
 import { Transaction } from "@/models/Transaction";
 import { transactionFormSchema } from "@/lib/validators/transactionFormSchema";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import z from "zod";
 
@@ -13,8 +13,14 @@ const updateSchema = transactionFormSchema.extend({
 
 export async function updateTransactionAction(data: unknown) {
   try {
-    const { userId } = await auth();
-    if (!userId) return { success: false, message: "User not authenticated." };
+   
+    const session = await auth();
+
+    if (!session?.user) {
+      return { success: false, message: "User not authenticated." };
+    }
+
+    const userId = (session.user as any).id;
 
     const parsed = updateSchema.parse(data);
 
@@ -51,8 +57,15 @@ export async function updateTransactionAction(data: unknown) {
 
 export async function deleteTransactionAction(transactionId: string) {
   try {
-    const { userId } = await auth();
-    if (!userId) return { success: false, message: "User not authenticated." };
+  
+    const session = await auth();
+
+    if (!session?.user) {
+      return { success: false, message: "User not authenticated." };
+    }
+
+    const userId = session.user.email!;
+
 
     await connectDB();
 
@@ -61,7 +74,9 @@ export async function deleteTransactionAction(transactionId: string) {
       userId,
     });
 
-    if (!deleted) return { success: false, message: "Transaction not found." };
+    if (!deleted) {
+      return { success: false, message: "Transaction not found." };
+    }
 
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/transactions");

@@ -1,11 +1,17 @@
 import "server-only";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
 import { Transaction } from "@/models/Transaction";
 
 export async function getTransaction(transactionId: string) {
-  const { userId } = await auth();
-  if (!userId) return null;
+ 
+  const session = await auth();
+
+  if (!session?.user) return null;
+
+  
+  const userId = session.user.email!;
+
 
   await connectDB();
 
@@ -21,6 +27,6 @@ export async function getTransaction(transactionId: string) {
     amount: tx.amount,
     transactionDate: tx.transactionDate,
     transactionType: tx.transactionType,
-    categoryId: tx.category?._id?.toString(), // for select default
+    categoryId: tx.category?._id?.toString(), 
   };
 }

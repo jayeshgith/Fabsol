@@ -1,5 +1,5 @@
 import "server-only";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
 import { Transaction } from "@/models/Transaction";
 
@@ -10,8 +10,14 @@ export async function getTransactionsByMonth({
   year: number;
   month: number;
 }) {
-  const { userId } = await auth();
-  if (!userId) return [];
+  // ✅ Auth.js session
+  const session = await auth();
+
+  if (!session?.user) return [];
+
+  // token.sub mapped to session.user.id
+  const userId = session.user.email!;
+
 
   await connectDB();
 

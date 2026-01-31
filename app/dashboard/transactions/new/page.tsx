@@ -12,8 +12,12 @@ import NewTransactionForm from "./new-transaction-form";
 
 import { connectDB } from "@/lib/db";
 import { Category } from "@/models/Category";
-// import { Category } from "@/types/Category";
-// import Category  from "@/models/Category";
+// import dynamic from "next/dynamic";
+
+// const NewTransactionForm = dynamic(() => import("./new-transaction-form"), {
+//   ssr: false,
+// });
+
 
 const NewTransactionPage = async () => {
   await connectDB();

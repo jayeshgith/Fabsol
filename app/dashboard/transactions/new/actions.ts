@@ -3,16 +3,21 @@
 import { connectDB } from "@/lib/db";
 import { Transaction } from "@/models/Transaction";
 import { transactionFormSchema } from "@/lib/validators/transactionFormSchema";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 
 export const createTransactionAction = async (data: unknown) => {
   try {
-    const { userId } = await auth(); 
+    
+    const session = await auth();
 
-    if (!userId) {
+    if (!session?.user) {
       return { success: false, message: "User not authenticated." };
     }
+
+   
+    const userId = session.user.email!;
+
 
     const parsed = transactionFormSchema.parse(data);
 
