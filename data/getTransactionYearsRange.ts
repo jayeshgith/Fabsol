@@ -4,12 +4,12 @@ import { connectDB } from "@/lib/db";
 import { Transaction } from "@/models/Transaction";
 
 export async function getTransactionYearsRange() {
-  // ✅ Auth.js session
+  
   const session = await auth();
 
   if (!session?.user) return [];
 
-  // token.sub mapped to session.user.id
+  
   const userId = session.user.email!;
 
 

@@ -18,7 +18,7 @@ export default async function AccountPage() {
       <div className="mt-6 rounded-xl border p-4">
         <h2 className="text-xl font-semibold">Security</h2>
         <p className="mt-2 text-gray-600 text-sm">
-          You are using Google login. Password change is managed by Google.
+         Login another Google Account or change your current account password.
         </p>
       </div>
     </div>

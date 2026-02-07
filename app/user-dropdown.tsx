@@ -1,52 +1,3 @@
-// "use client";
-
-// import { signOut, useSession } from "next-auth/react";
-// import { ChartColumnBigIcon, LogOutIcon } from "lucide-react";
-// import { useRouter } from "next/navigation";
-
-// const UserDropdown = () => {
-//   const router = useRouter();
-//   const { data: session } = useSession();
-
-//   if (!session?.user) return null;
-
-//   return (
-//     <div className="relative flex items-center gap-3">
-//       {/* User name */}
-//       <span className="text-sm font-medium text-white">
-//         {session.user.name}
-//       </span>
-
-//       {/* Dropdown */}
-//       <div className="group relative">
-//         <button className="rounded-full border px-3 py-1 text-sm text-white">
-//           Menu
-//         </button>
-
-//         <div className="invisible absolute right-0 top-full z-50 mt-2 w-44 rounded-xl border bg-white shadow-md group-hover:visible">
-//           <button
-//             onClick={() => router.push("/dashboard")}
-//             className="flex w-full items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100"
-//           >
-//             <ChartColumnBigIcon size={16} />
-//             Dashboard
-//           </button>
-
-//           <button
-//             onClick={() => signOut({ callbackUrl: "/login" })}
-//             className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-//           >
-//             <LogOutIcon size={16} />
-//             Logout
-//           </button>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default UserDropdown;
-
 "use client";
 
 import Link from "next/link";
@@ -76,22 +27,37 @@ export default function UserDropdown() {
 
   if (!session?.user) return null;
 
+  const name = session.user.name ?? "User";
+  const image = session.user.image ?? "";
+
   return (
     <div ref={boxRef} className="relative flex items-center gap-3">
-      <span className="text-sm font-medium text-white">
-        {session.user.name ?? "User"}
-      </span>
+      <div className="flex items-center gap-2">
+        <div className="h-9 w-9 overflow-hidden rounded-full border border-white/20 bg-white/10 flex items-center justify-center">
+          {image ? (
+            <img
+              src={image}
+              alt="Profile"
+              className="h-full w-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <UserIcon size={18} className="text-white/80" />
+          )}
+        </div>
+
+        <span className="text-sm font-medium text-white">{name}</span>
+      </div>
 
       <button
         onClick={() => setOpen((v) => !v)}
-        className="rounded-full border px-3 py-1 text-sm text-white"
-        aria-expanded={open}
+        className="rounded-full border border-white/25 px-3 py-1 text-sm text-white hover:bg-white/10"
       >
         Menu
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl border border-slate-200 bg-white shadow-lg">
+        <div className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
           <Link
             href="/dashboard"
             onClick={() => setOpen(false)}

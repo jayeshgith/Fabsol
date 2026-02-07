@@ -10,12 +10,12 @@ export async function getTransactionsByMonth({
   year: number;
   month: number;
 }) {
-  // ✅ Auth.js session
+ 
   const session = await auth();
 
   if (!session?.user) return [];
 
-  // token.sub mapped to session.user.id
+  
   const userId = session.user.email!;
 
 

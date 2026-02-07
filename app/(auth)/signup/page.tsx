@@ -1,0 +1,329 @@
+"use client";
+
+import { signIn } from "next-auth/react";
+import Link from "next/link";
+import { useState } from "react";
+
+export default function SignupPage() {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const [showPass, setShowPass] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSignup() {
+    setMsg(null);
+    setLoading(true);
+
+   
+    if (password !== confirmPassword) {
+      setMsg("Passwords do not match");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ firstName, lastName, email, password }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setMsg(data?.message || "Signup failed");
+        setLoading(false);
+        return;
+      }
+
+     
+      const login = await signIn("credentials", {
+        email,
+        password,
+        redirect: true,
+        callbackUrl: "/dashboard",
+      });
+
+     
+      setLoading(false);
+      return login;
+    } catch (e: any) {
+      setMsg(e?.message || "Something went wrong");
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4 overflow-hidden">
+     
+      <div className="absolute top-20 -left-32 w-64 h-64 bg-cyan-500/20 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-32 -right-32 w-72 h-72 bg-blue-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
+      <div className="absolute top-1/2 left-1/3 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-500" />
+
+     
+      <div className="relative z-10 w-full max-w-md">
+        
+        <div className="rounded-3xl border border-white/10 bg-white/10 backdrop-blur-xl p-8 shadow-2xl">
+          
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+              Join Us
+            </h1>
+            <p className="mt-2 text-sm text-white/60">
+              Create your account and start managing your finances
+            </p>
+          </div>
+
+          
+          <button
+            onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+            className="w-full flex items-center justify-center gap-3 rounded-xl border border-white/20 bg-white/10 backdrop-blur-md py-3 text-sm font-semibold text-white transition-all duration-300 hover:bg-white/20 hover:border-white/30"
+          >
+            <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden>
+              <path
+                fill="#EA4335"
+                d="M24 9.5c3.3 0 6.3 1.2 8.6 3.2l6.4-6.4C34.9 2.3 29.7 0 24 0 14.6 0 6.4 5.4 2.5 13.2l7.5 5.8C12.1 13.2 17.6 9.5 24 9.5z"
+              />
+              <path
+                fill="#4285F4"
+                d="M46.1 24.5c0-1.7-.2-3.3-.5-4.9H24v9.3h12.4c-.5 2.6-2 4.8-4.3 6.3l6.7 5.2c3.9-3.6 6.3-8.9 6.3-15.9z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M10 28.9c-.5-1.5-.8-3.1-.8-4.9s.3-3.4.8-4.9l-7.5-5.8C.9 16.4 0 20.1 0 24s.9 7.6 2.5 10.7l7.5-5.8z"
+              />
+              <path
+                fill="#34A853"
+                d="M24 48c6.5 0 12-2.1 16-5.8l-6.7-5.2c-1.9 1.3-4.3 2.1-7.3 2.1-6.4 0-11.9-3.7-14-9.2l-7.5 5.8C6.4 42.6 14.6 48 24 48z"
+              />
+            </svg>
+            Continue with Google
+          </button>
+
+          
+          {/* <button
+            onClick={() => signIn("facebook", { callbackUrl: "/dashboard" })}
+            className="mt-3 flex w-full items-center justify-center gap-3 rounded-xl bg-[#1877F2] py-3 text-sm font-semibold text-white hover:bg-[#166fe0]"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="white"
+              aria-hidden
+            >
+              <path d="M22 12a10 10 0 1 0-11.6 9.9v-7H8v-3h2.4V9.5c0-2.4 1.4-3.7 3.6-3.7 1 0 2 .1 2 .1v2.3h-1.1c-1.1 0-1.4.7-1.4 1.3V12H16l-.4 3h-2.5v7A10 10 0 0 0 22 12Z" />
+            </svg>
+            Continue with Facebook
+          </button> */}
+          
+
+          
+          <div className="my-6 flex items-center gap-3">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+            <span className="text-xs text-white/40">or</span>
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+          </div>
+
+       
+          <div className="space-y-4">
+           
+            <div className="grid grid-cols-2 gap-3">
+            
+              <div>
+                <label className="block text-xs font-medium text-white/70 mb-2">
+                  First name
+                </label>
+                <input
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="Shree"
+                  className="w-full rounded-xl border border-white/15 bg-white/5 backdrop-blur-md px-4 py-3 text-sm text-white placeholder-white/30 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                />
+              </div>
+
+            
+              <div>
+                <label className="block text-xs font-medium text-white/70 mb-2">
+                  Last name
+                </label>
+                <input
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder="Ram"
+                  className="w-full rounded-xl border border-white/15 bg-white/5 backdrop-blur-md px-4 py-3 text-sm text-white placeholder-white/30 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            
+            <div>
+              <label className="block text-xs font-medium text-white/70 mb-2">
+                Email address
+              </label>
+              <div className="relative">
+                <svg
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-cyan-400/60"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  />
+                </svg>
+                <input
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  type="email"
+                  className="w-full rounded-xl border border-white/15 bg-white/5 backdrop-blur-md pl-12 pr-4 py-3 text-sm text-white placeholder-white/30 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+          
+            <div>
+              <label className="block text-xs font-medium text-white/70 mb-2">
+                Password
+              </label>
+              <div className="relative">
+                <svg
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-cyan-400/60"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
+                </svg>
+                <input
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  type={showPass ? "text" : "password"}
+                  className="w-full rounded-xl border border-white/15 bg-white/5 backdrop-blur-md pl-12 pr-12 py-3 text-sm text-white placeholder-white/30 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPass((v) => !v)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/80 transition-colors duration-200"
+                >
+                  {showPass ? (
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-4.803m5.596-3.856a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0z"
+                      />
+                    </svg>
+                  ) : (
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                      />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+
+                      <div>
+              <label className="block text-xs font-medium text-white/70 mb-2">
+                Re-enter password
+              </label>
+              <div className="relative">
+                <svg
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-cyan-400/60"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
+                </svg>
+                <input
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  type={showPass ? "text" : "password"}
+                  className="w-full rounded-xl border border-white/15 bg-white/5 backdrop-blur-md pl-12 pr-12 py-3 text-sm text-white placeholder-white/30 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+          </div>
+
+        
+          {msg ? (
+            <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3">
+              <p className="text-xs font-medium text-red-300">{msg}</p>
+            </div>
+          ) : null}
+
+          
+          <button
+            onClick={handleSignup}
+            disabled={loading}
+            className="mt-6 w-full rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 py-3 text-sm font-semibold text-white transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="inline-block h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Creating account...
+              </span>
+            ) : (
+              "Create Account →"
+            )}
+          </button>
+
+          
+          <p className="mt-6 text-center text-sm text-white/60">
+            Already have an account?{" "}
+            <Link
+              href="/login"
+              className="font-semibold text-cyan-400 hover:text-cyan-300 transition-colors duration-200"
+            >
+              Sign in
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
