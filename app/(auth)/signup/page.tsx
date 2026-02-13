@@ -2,7 +2,7 @@
 
 import { signIn } from "next-auth/react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function SignupPage() {
   const [firstName, setFirstName] = useState("");
@@ -14,12 +14,16 @@ export default function SignupPage() {
   const [showPass, setShowPass] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   async function handleSignup() {
     setMsg(null);
     setLoading(true);
 
-   
     if (password !== confirmPassword) {
       setMsg("Passwords do not match");
       setLoading(false);
@@ -41,7 +45,6 @@ export default function SignupPage() {
         return;
       }
 
-     
       const login = await signIn("credentials", {
         email,
         password,
@@ -49,7 +52,6 @@ export default function SignupPage() {
         callbackUrl: "/dashboard",
       });
 
-     
       setLoading(false);
       return login;
     } catch (e: any) {
@@ -59,53 +61,65 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4 overflow-hidden">
-     
-      <div className="absolute top-20 -left-32 w-64 h-64 bg-cyan-500/20 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-32 -right-32 w-72 h-72 bg-blue-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
-      <div className="absolute top-1/2 left-1/3 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-500" />
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-[#0b1220] via-[#16203b] to-[#2f1f2f] px-4 py-6 sm:px-6">
+      <div className="absolute top-20 -left-32 h-64 w-64 rounded-full bg-emerald-400/20 blur-3xl animate-pulse" />
+      <div className="absolute bottom-32 -right-32 h-72 w-72 rounded-full bg-orange-400/20 blur-3xl animate-pulse delay-1000" />
+      <div className="absolute top-1/2 left-1/3 h-80 w-80 rounded-full bg-sky-400/15 blur-3xl animate-pulse delay-500" />
 
-     
       <div className="relative z-10 w-full max-w-md">
-        
-        <div className="rounded-3xl border border-white/10 bg-white/10 backdrop-blur-xl p-8 shadow-2xl">
-          
-          <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+        <div
+          className={`rounded-3xl border border-white/15 bg-slate-950/45 p-5 shadow-2xl shadow-black/40 backdrop-blur-xl transition-all duration-700 sm:p-8 ${
+            isMounted
+              ? "translate-y-0 scale-100 opacity-100"
+              : "translate-y-3 scale-[0.985] opacity-0"
+          }`}
+        >
+          <div
+            className={`mb-7 text-center transition-all duration-700 ${
+              isMounted ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
+            }`}
+          >
+            <h1 className="bg-gradient-to-r from-amber-300 via-orange-300 to-rose-300 bg-clip-text text-3xl font-bold text-transparent sm:text-4xl">
               Join Us
             </h1>
-            <p className="mt-2 text-sm text-white/60">
+            <p className="mt-2 text-sm text-slate-200/80">
               Create your account and start managing your finances
             </p>
           </div>
 
-          
-          <button
-            onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-            className="w-full flex items-center justify-center gap-3 rounded-xl border border-white/20 bg-white/10 backdrop-blur-md py-3 text-sm font-semibold text-white transition-all duration-300 hover:bg-white/20 hover:border-white/30"
+          <div
+            className={`transition-all duration-700 ${
+              isMounted
+                ? "translate-y-0 opacity-100 delay-100"
+                : "translate-y-2 opacity-0"
+            }`}
           >
-            <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden>
-              <path
-                fill="#EA4335"
-                d="M24 9.5c3.3 0 6.3 1.2 8.6 3.2l6.4-6.4C34.9 2.3 29.7 0 24 0 14.6 0 6.4 5.4 2.5 13.2l7.5 5.8C12.1 13.2 17.6 9.5 24 9.5z"
-              />
-              <path
-                fill="#4285F4"
-                d="M46.1 24.5c0-1.7-.2-3.3-.5-4.9H24v9.3h12.4c-.5 2.6-2 4.8-4.3 6.3l6.7 5.2c3.9-3.6 6.3-8.9 6.3-15.9z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M10 28.9c-.5-1.5-.8-3.1-.8-4.9s.3-3.4.8-4.9l-7.5-5.8C.9 16.4 0 20.1 0 24s.9 7.6 2.5 10.7l7.5-5.8z"
-              />
-              <path
-                fill="#34A853"
-                d="M24 48c6.5 0 12-2.1 16-5.8l-6.7-5.2c-1.9 1.3-4.3 2.1-7.3 2.1-6.4 0-11.9-3.7-14-9.2l-7.5 5.8C6.4 42.6 14.6 48 24 48z"
-              />
-            </svg>
-            Continue with Google
-          </button>
+            <button
+              onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+              className="flex w-full items-center justify-center gap-3 rounded-xl border border-white/25 bg-slate-900/60 py-3 text-sm font-semibold text-slate-50 transition-all duration-300 hover:border-amber-200/50 hover:bg-slate-800/70"
+            >
+              <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden>
+                <path
+                  fill="#EA4335"
+                  d="M24 9.5c3.3 0 6.3 1.2 8.6 3.2l6.4-6.4C34.9 2.3 29.7 0 24 0 14.6 0 6.4 5.4 2.5 13.2l7.5 5.8C12.1 13.2 17.6 9.5 24 9.5z"
+                />
+                <path
+                  fill="#4285F4"
+                  d="M46.1 24.5c0-1.7-.2-3.3-.5-4.9H24v9.3h12.4c-.5 2.6-2 4.8-4.3 6.3l6.7 5.2c3.9-3.6 6.3-8.9 6.3-15.9z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M10 28.9c-.5-1.5-.8-3.1-.8-4.9s.3-3.4.8-4.9l-7.5-5.8C.9 16.4 0 20.1 0 24s.9 7.6 2.5 10.7l7.5-5.8z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M24 48c6.5 0 12-2.1 16-5.8l-6.7-5.2c-1.9 1.3-4.3 2.1-7.3 2.1-6.4 0-11.9-3.7-14-9.2l-7.5 5.8C6.4 42.6 14.6 48 24 48z"
+                />
+              </svg>
+              Continue with Google
+            </button>
+          </div>
 
-          
           {/* <button
             onClick={() => signIn("facebook", { callbackUrl: "/dashboard" })}
             className="mt-3 flex w-full items-center justify-center gap-3 rounded-xl bg-[#1877F2] py-3 text-sm font-semibold text-white hover:bg-[#166fe0]"
@@ -121,54 +135,53 @@ export default function SignupPage() {
             </svg>
             Continue with Facebook
           </button> */}
-          
 
-          
           <div className="my-6 flex items-center gap-3">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-            <span className="text-xs text-white/40">or</span>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-amber-100/35 to-transparent" />
+            <span className="text-xs text-slate-300/60">or</span>
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-amber-100/35 to-transparent" />
           </div>
 
-       
-          <div className="space-y-4">
-           
-            <div className="grid grid-cols-2 gap-3">
-            
+          <div
+            className={`space-y-4 transition-all duration-700 ${
+              isMounted
+                ? "translate-y-0 opacity-100 delay-200"
+                : "translate-y-2 opacity-0"
+            }`}
+          >
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <label className="block text-xs font-medium text-white/70 mb-2">
+                <label className="mb-2 block text-xs font-medium text-slate-200/85">
                   First name
                 </label>
                 <input
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   placeholder="Shree"
-                  className="w-full rounded-xl border border-white/15 bg-white/5 backdrop-blur-md px-4 py-3 text-sm text-white placeholder-white/30 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  className="w-full rounded-xl border border-white/20 bg-slate-950/60 px-4 py-3 text-sm text-slate-50 placeholder-slate-400/70 transition-all duration-300 focus:border-amber-300/40 focus:outline-none focus:ring-2 focus:ring-amber-400"
                 />
               </div>
 
-            
               <div>
-                <label className="block text-xs font-medium text-white/70 mb-2">
+                <label className="mb-2 block text-xs font-medium text-slate-200/85">
                   Last name
                 </label>
                 <input
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   placeholder="Ram"
-                  className="w-full rounded-xl border border-white/15 bg-white/5 backdrop-blur-md px-4 py-3 text-sm text-white placeholder-white/30 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  className="w-full rounded-xl border border-white/20 bg-slate-950/60 px-4 py-3 text-sm text-slate-50 placeholder-slate-400/70 transition-all duration-300 focus:border-amber-300/40 focus:outline-none focus:ring-2 focus:ring-amber-400"
                 />
               </div>
             </div>
 
-            
             <div>
-              <label className="block text-xs font-medium text-white/70 mb-2">
+              <label className="mb-2 block text-xs font-medium text-slate-200/85">
                 Email address
               </label>
               <div className="relative">
                 <svg
-                  className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-cyan-400/60"
+                  className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-amber-300/70"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -185,19 +198,18 @@ export default function SignupPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   type="email"
-                  className="w-full rounded-xl border border-white/15 bg-white/5 backdrop-blur-md pl-12 pr-4 py-3 text-sm text-white placeholder-white/30 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  className="w-full rounded-xl border border-white/20 bg-slate-950/60 py-3 pl-12 pr-4 text-sm text-slate-50 placeholder-slate-400/70 transition-all duration-300 focus:border-amber-300/40 focus:outline-none focus:ring-2 focus:ring-amber-400"
                 />
               </div>
             </div>
 
-          
             <div>
-              <label className="block text-xs font-medium text-white/70 mb-2">
+              <label className="mb-2 block text-xs font-medium text-slate-200/85">
                 Password
               </label>
               <div className="relative">
                 <svg
-                  className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-cyan-400/60"
+                  className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-amber-300/70"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -212,18 +224,18 @@ export default function SignupPage() {
                 <input
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="********"
                   type={showPass ? "text" : "password"}
-                  className="w-full rounded-xl border border-white/15 bg-white/5 backdrop-blur-md pl-12 pr-12 py-3 text-sm text-white placeholder-white/30 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  className="w-full rounded-xl border border-white/20 bg-slate-950/60 py-3 pl-12 pr-12 text-sm text-slate-50 placeholder-slate-400/70 transition-all duration-300 focus:border-amber-300/40 focus:outline-none focus:ring-2 focus:ring-amber-400"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPass((v) => !v)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/80 transition-colors duration-200"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300/70 transition-colors duration-200 hover:text-amber-200"
                 >
                   {showPass ? (
                     <svg
-                      className="w-5 h-5"
+                      className="h-5 w-5"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -237,7 +249,7 @@ export default function SignupPage() {
                     </svg>
                   ) : (
                     <svg
-                      className="w-5 h-5"
+                      className="h-5 w-5"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -260,13 +272,13 @@ export default function SignupPage() {
               </div>
             </div>
 
-                      <div>
-              <label className="block text-xs font-medium text-white/70 mb-2">
+            <div>
+              <label className="mb-2 block text-xs font-medium text-slate-200/85">
                 Re-enter password
               </label>
               <div className="relative">
                 <svg
-                  className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-cyan-400/60"
+                  className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-amber-300/70"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -281,47 +293,52 @@ export default function SignupPage() {
                 <input
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="********"
                   type={showPass ? "text" : "password"}
-                  className="w-full rounded-xl border border-white/15 bg-white/5 backdrop-blur-md pl-12 pr-12 py-3 text-sm text-white placeholder-white/30 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  className="w-full rounded-xl border border-white/20 bg-slate-950/60 py-3 pl-12 pr-12 text-sm text-slate-50 placeholder-slate-400/70 transition-all duration-300 focus:border-amber-300/40 focus:outline-none focus:ring-2 focus:ring-amber-400"
                 />
               </div>
             </div>
           </div>
 
-        
           {msg ? (
-            <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3">
-              <p className="text-xs font-medium text-red-300">{msg}</p>
+            <div className="mt-4 rounded-xl border border-rose-300/40 bg-rose-500/15 p-3">
+              <p className="text-xs font-medium text-rose-200">{msg}</p>
             </div>
           ) : null}
 
-          
-          <button
-            onClick={handleSignup}
-            disabled={loading}
-            className="mt-6 w-full rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 py-3 text-sm font-semibold text-white transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+          <div
+            className={`transition-all duration-700 ${
+              isMounted
+                ? "translate-y-0 opacity-100 delay-300"
+                : "translate-y-2 opacity-0"
+            }`}
           >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="inline-block h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Creating account...
-              </span>
-            ) : (
-              "Create Account →"
-            )}
-          </button>
-
-          
-          <p className="mt-6 text-center text-sm text-white/60">
-            Already have an account?{" "}
-            <Link
-              href="/login"
-              className="font-semibold text-cyan-400 hover:text-cyan-300 transition-colors duration-200"
+            <button
+              onClick={handleSignup}
+              disabled={loading}
+              className="mt-6 w-full rounded-xl bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 py-3 text-sm font-semibold text-white transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/45 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Sign in
-            </Link>
-          </p>
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  Creating account...
+                </span>
+              ) : (
+                "Create Account ->"
+              )}
+            </button>
+
+            <p className="mt-6 text-center text-sm text-slate-200/75">
+              Already have an account?{" "}
+              <Link
+                href="/login"
+                className="font-semibold text-amber-300 transition-colors duration-200 hover:text-amber-200"
+              >
+                Sign in
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

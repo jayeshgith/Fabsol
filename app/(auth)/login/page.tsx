@@ -1,13 +1,10 @@
-
-
 "use client";
 
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
-import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -17,6 +14,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   async function handleCredentialsLogin() {
     setLoading(true);
@@ -38,9 +40,7 @@ export default function LoginPage() {
 
       setLoading(false);
 
-      
       if (res?.error) {
-        
         const err = res.error;
         if (err === "CredentialsSignin" || /credential/i.test(err)) {
           setMsg("Invalid email or password");
@@ -55,29 +55,36 @@ export default function LoginPage() {
         return;
       }
 
-      
       router.push(res.url || callbackUrl || "/");
       router.refresh();
-    } catch (err) {
+    } catch {
       setLoading(false);
       setMsg("An unexpected error occurred. Please try again.");
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4 relative overflow-hidden">
-      
-      <div className="absolute top-0 -left-40 w-80 h-80 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-0 -right-40 w-80 h-80 bg-gradient-to-tl from-cyan-500/20 to-blue-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-[#0b1220] via-[#16203b] to-[#2f1f2f] px-4 py-6 sm:px-6">
+      <div className="absolute top-20 -left-32 h-64 w-64 rounded-full bg-emerald-400/20 blur-3xl animate-pulse" />
+      <div className="absolute bottom-32 -right-32 h-72 w-72 rounded-full bg-orange-400/20 blur-3xl animate-pulse delay-1000" />
+      <div className="absolute top-1/2 left-1/3 h-80 w-80 rounded-full bg-sky-400/15 blur-3xl animate-pulse delay-500" />
 
-      <div className="w-full max-w-md relative z-10">
-       
-        <div className="rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 p-8 shadow-2xl">
-          
-          <div className="text-center mb-8">
-            <div className="inline-block p-3 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full mb-4 shadow-lg">
+      <div className="relative z-10 w-full max-w-md">
+        <div
+          className={`rounded-3xl border border-white/15 bg-slate-950/45 p-5 shadow-2xl shadow-black/40 backdrop-blur-xl transition-all duration-700 sm:p-8 ${
+            isMounted
+              ? "translate-y-0 scale-100 opacity-100"
+              : "translate-y-3 scale-[0.985] opacity-0"
+          }`}
+        >
+          <div
+            className={`mb-7 text-center transition-all duration-700 ${
+              isMounted ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
+            }`}
+          >
+            <div className="mb-4 inline-flex rounded-full bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 p-3 shadow-lg shadow-orange-500/35">
               <svg
-                className="w-6 h-6 text-white"
+                className="h-6 w-6 text-white"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -89,83 +96,76 @@ export default function LoginPage() {
                 />
               </svg>
             </div>
-            <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">
+            <h1 className="bg-gradient-to-r from-amber-300 via-orange-300 to-rose-300 bg-clip-text text-3xl font-bold tracking-tight text-transparent sm:text-4xl">
               Welcome Back
             </h1>
-            <p className="text-gray-300 text-sm">
+            <p className="mt-2 text-sm text-slate-200/80">
               Sign in to your account to continue
             </p>
           </div>
 
-         
-          <button
-            onClick={() => signIn("google", { callbackUrl: "/" })}
-            className="w-full flex items-center justify-center gap-3 rounded-lg bg-white/[0.08] hover:bg-white/[0.12] border border-white/20 px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:border-white/30 group"
+          <div
+            className={`transition-all duration-700 ${
+              isMounted
+                ? "translate-y-0 opacity-100 delay-100"
+                : "translate-y-2 opacity-0"
+            }`}
           >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 48 48"
-              aria-hidden
-              className="group-hover:scale-110 transition-transform"
+            <button
+              onClick={() => signIn("google", { callbackUrl: "/" })}
+              className="group flex w-full items-center justify-center gap-3 rounded-xl border border-white/25 bg-slate-900/60 px-4 py-3 text-sm font-semibold text-slate-50 transition-all duration-300 hover:border-amber-200/50 hover:bg-slate-800/70"
             >
-              <path
-                fill="#EA4335"
-                d="M24 9.5c3.3 0 6.3 1.2 8.6 3.2l6.4-6.4C34.9 2.3 29.7 0 24 0 14.6 0 6.4 5.4 2.5 13.2l7.5 5.8C12.1 13.2 17.6 9.5 24 9.5z"
-              />
-              <path
-                fill="#4285F4"
-                d="M46.1 24.5c0-1.7-.2-3.3-.5-4.9H24v9.3h12.4c-.5 2.6-2 4.8-4.3 6.3l6.7 5.2c3.9-3.6 6.3-8.9 6.3-15.9z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M10 28.9c-.5-1.5-.8-3.1-.8-4.9s.3-3.4.8-4.9l-7.5-5.8C.9 16.4 0 20.1 0 24s.9 7.6 2.5 10.7l7.5-5.8z"
-              />
-              <path
-                fill="#34A853"
-                d="M24 48c6.5 0 12-2.1 16-5.8l-6.7-5.2c-1.9 1.3-4.3 2.1-7.3 2.1-6.4 0-11.9-3.7-14-9.2l-7.5 5.8C6.4 42.6 14.6 48 24 48z"
-              />
-            </svg>
-            Continue with Google
-          </button>
-
-{/*          
-          <button
-            onClick={() => signIn("facebook", { callbackUrl: "/dashboard" })}
-            className="mt-3 flex w-full items-center justify-center gap-3 rounded-xl bg-[#1877F2] py-3 text-sm font-semibold text-white hover:bg-[#166fe0]"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="white"
-              aria-hidden
-            >
-              <path d="M22 12a10 10 0 1 0-11.6 9.9v-7H8v-3h2.4V9.5c0-2.4 1.4-3.7 3.6-3.7 1 0 2 .1 2 .1v2.3h-1.1c-1.1 0-1.4.7-1.4 1.3V12H16l-.4 3h-2.5v7A10 10 0 0 0 22 12Z" />
-            </svg>
-            Continue with Facebook
-          </button> */}
-          
-
-        
-          <div className="my-6 flex items-center gap-3">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-            <span className="text-xs text-gray-400 font-medium">OR</span>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 48 48"
+                aria-hidden
+                className="transition-transform duration-200 group-hover:scale-110"
+              >
+                <path
+                  fill="#EA4335"
+                  d="M24 9.5c3.3 0 6.3 1.2 8.6 3.2l6.4-6.4C34.9 2.3 29.7 0 24 0 14.6 0 6.4 5.4 2.5 13.2l7.5 5.8C12.1 13.2 17.6 9.5 24 9.5z"
+                />
+                <path
+                  fill="#4285F4"
+                  d="M46.1 24.5c0-1.7-.2-3.3-.5-4.9H24v9.3h12.4c-.5 2.6-2 4.8-4.3 6.3l6.7 5.2c3.9-3.6 6.3-8.9 6.3-15.9z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M10 28.9c-.5-1.5-.8-3.1-.8-4.9s.3-3.4.8-4.9l-7.5-5.8C.9 16.4 0 20.1 0 24s.9 7.6 2.5 10.7l7.5-5.8z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M24 48c6.5 0 12-2.1 16-5.8l-6.7-5.2c-1.9 1.3-4.3 2.1-7.3 2.1-6.4 0-11.9-3.7-14-9.2l-7.5 5.8C6.4 42.6 14.6 48 24 48z"
+                />
+              </svg>
+              Continue with Google
+            </button>
           </div>
 
-       
-          <div className="space-y-3 mb-6">
-            <div className="relative group">
+          <div className="my-6 flex items-center gap-3">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-amber-100/35 to-transparent" />
+            <span className="text-xs font-medium text-slate-300/60">OR</span>
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-amber-100/35 to-transparent" />
+          </div>
+
+          <div
+            className={`mb-6 space-y-3 transition-all duration-700 ${
+              isMounted
+                ? "translate-y-0 opacity-100 delay-200"
+                : "translate-y-2 opacity-0"
+            }`}
+          >
+            <div className="group relative">
               <input
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 type="email"
                 placeholder="Email address"
-                className="w-full px-4 py-3 rounded-lg bg-white/[0.08] border border-white/20 text-white placeholder:text-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white/[0.12] focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+                className="w-full rounded-xl border border-white/20 bg-slate-950/60 px-4 py-3 text-sm text-slate-50 placeholder-slate-400/70 transition-all duration-300 focus:border-amber-300/40 focus:outline-none focus:ring-2 focus:ring-amber-400"
               />
               <svg
-                className="w-5 h-5 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-400 transition-colors pointer-events-none"
+                className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-amber-300"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -179,16 +179,16 @@ export default function LoginPage() {
               </svg>
             </div>
 
-            <div className="relative group">
+            <div className="group relative">
               <input
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 type="password"
                 placeholder="Password"
-                className="w-full px-4 py-3 rounded-lg bg-white/[0.08] border border-white/20 text-white placeholder:text-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white/[0.12] focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
+                className="w-full rounded-xl border border-white/20 bg-slate-950/60 px-4 py-3 text-sm text-slate-50 placeholder-slate-400/70 transition-all duration-300 focus:border-amber-300/40 focus:outline-none focus:ring-2 focus:ring-amber-400"
               />
               <svg
-                className="w-5 h-5 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-400 transition-colors pointer-events-none"
+                className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-amber-300"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -203,76 +203,89 @@ export default function LoginPage() {
             </div>
           </div>
 
-          
-          <button
-            onClick={handleCredentialsLogin}
-            disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-blue-500/25 active:scale-95 flex items-center justify-center gap-2"
+          <div
+            className={`transition-all duration-700 ${
+              isMounted
+                ? "translate-y-0 opacity-100 delay-300"
+                : "translate-y-2 opacity-0"
+            }`}
           >
-            {loading ? (
-              <>
-                <svg
-                  className="w-5 h-5 animate-spin"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
-                Signing in...
-              </>
-            ) : (
-              "Sign In"
-            )}
-          </button>
+            <button
+              onClick={handleCredentialsLogin}
+              disabled={loading}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 py-3 text-sm font-semibold text-white transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/45 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.99]"
+            >
+              {loading ? (
+                <>
+                  <svg
+                    className="h-5 w-5 animate-spin"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                  Signing in...
+                </>
+              ) : (
+                "Sign In"
+              )}
+            </button>
 
-         
-          {msg ? (
-            <div className="mt-4 p-3 rounded-lg bg-red-500/20 border border-red-500/30">
-              <p className="text-sm text-red-300 font-medium flex items-center gap-2">
-                <svg
-                  className="w-4 h-4"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
+            {msg ? (
+              <div className="mt-4 rounded-xl border border-rose-300/40 bg-rose-500/15 p-3">
+                <p className="flex items-center gap-2 text-sm font-medium text-rose-200">
+                  <svg
+                    className="h-4 w-4"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  {msg}
+                </p>
+              </div>
+            ) : null}
+
+            <div className="mt-6 space-y-3 text-center text-sm">
+              <p>
+                <a
+                  href="/forgot-password"
+                  className="font-medium text-slate-200/80 transition-colors hover:text-amber-200"
                 >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                {msg}
+                  Forgot password?
+                </a>
+              </p>
+              <p className="text-slate-300/70">
+                Don't have an account?{" "}
+                <a
+                  href="/signup"
+                  className="font-semibold text-amber-300 transition-colors hover:text-amber-200"
+                >
+                  Create one
+                </a>
               </p>
             </div>
-          ) : null}
-
-          
-          <div className="mt-6 space-y-3 text-center text-sm">
-            <p>
-              <a
-                href="/forgot-password"
-                className="text-gray-300 hover:text-blue-400 transition-colors font-medium"
-              >
-                Forgot password?
-              </a>
-            </p>
-            <p className="text-gray-400">
-              Don't have an account?{" "}
-              <a
-                href="/signup"
-                className="text-blue-400 hover:text-blue-300 font-semibold transition-colors"
-              >
-                Create one
-              </a>
-            </p>
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginContent />
+    </Suspense>
   );
 }

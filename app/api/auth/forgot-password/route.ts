@@ -3,7 +3,6 @@ import { connectDB } from "@/lib/db";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 
-
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: parseInt(process.env.SMTP_PORT || "587"),
@@ -27,10 +26,8 @@ export async function POST(req: Request) {
       });
     }
 
-    
     const user = await User.findOne({ email });
     if (!user) {
-     
       return new Response(
         JSON.stringify({
           message:
@@ -40,22 +37,18 @@ export async function POST(req: Request) {
       );
     }
 
-    
     const resetToken = crypto.randomBytes(32).toString("hex");
     const resetTokenHash = crypto
       .createHash("sha256")
       .update(resetToken)
       .digest("hex");
 
-    
     user.resetToken = resetTokenHash;
     user.resetTokenExpiry = new Date(Date.now() + 30 * 60 * 1000);
     await user.save();
 
-    
     const resetUrl = `${process.env.NEXT_PUBLIC_URL}/reset-password/${resetToken}`;
 
-   
     const mailOptions = {
       from: process.env.SMTP_FROM,
       to: email,
@@ -79,7 +72,6 @@ export async function POST(req: Request) {
       `,
     };
 
-    
     try {
       await transporter.verify();
     } catch (verifyErr) {
@@ -92,19 +84,16 @@ export async function POST(req: Request) {
       );
     }
 
-    
     const info = await transporter.sendMail(mailOptions);
 
-   
     let previewUrl: string | null = null;
     try {
-      
       const nodemailerPkg = require("nodemailer");
       if (typeof nodemailerPkg.getTestMessageUrl === "function") {
         previewUrl = nodemailerPkg.getTestMessageUrl(info) || null;
       }
     } catch (e) {
-    
+      // ignore
     }
 
     const responsePayload: any = {

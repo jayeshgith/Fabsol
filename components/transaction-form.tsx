@@ -36,7 +36,7 @@ type Props = {
   defaultValues?: {
     transactionType: "income" | "expense";
     amount: number;
-    categoryId: number;
+    categoryId: string;
     description: string;
     transactionDate: Date;
   };
@@ -89,7 +89,7 @@ const TransactionForm = ({ categories, onsubmit, defaultValues }: Props) => {
                     <Select
                       onValueChange={(newValue) => {
                         field.onChange(newValue);
-                        form.setValue("categoryId", 0);
+                        form.setValue("categoryId", "");
                       }}
                       value={field.value}
                     >
