@@ -11,7 +11,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { normalizePhoneNumber } from "@/lib/profile";
 
 type SearchUser = {
   id: string;
@@ -41,18 +40,13 @@ export default function CreateGroupForm() {
     event.preventDefault();
     setMessage("");
 
-    const normalizedQuery = normalizePhoneNumber(query);
-    if (!normalizedQuery) {
-      setResults([]);
-      setMessage("Enter a phone number to search.");
-      return;
-    }
+    const trimmedQuery = query.trim();
 
     setSearching(true);
 
     try {
       const res = await fetch(
-        `/api/users/search?query=${encodeURIComponent(normalizedQuery)}`,
+        `/api/users/search?query=${encodeURIComponent(trimmedQuery)}`,
         { cache: "no-store" },
       );
 
@@ -68,7 +62,11 @@ export default function CreateGroupForm() {
       const foundUsers = Array.isArray(data?.users) ? data.users : [];
       setResults(foundUsers);
       if (foundUsers.length === 0) {
-        setMessage("No users found for this phone number.");
+        setMessage(
+          trimmedQuery
+            ? "No users found for this name or phone number."
+            : "No available users found right now.",
+        );
       }
     } catch {
       setResults([]);
@@ -137,7 +135,7 @@ export default function CreateGroupForm() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Create Group</h1>
           <p className="mt-1 text-sm text-slate-600">
-            Create your family group and add members by phone number.
+            Create your family group and add members by name or phone number.
           </p>
         </div>
         <Button variant="outline" asChild>
@@ -159,13 +157,13 @@ export default function CreateGroupForm() {
 
         <div>
           <p className="mb-2 text-sm font-medium text-slate-700">
-            Search Member By Phone
+            Search Member By Name or Phone
           </p>
           <form onSubmit={onSearch}>
             <div className="flex w-full max-w-xl items-center space-x-2">
               <Input
                 name="query"
-                placeholder="+917099482122"
+                placeholder="Name or phone number"
                 type="text"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
@@ -177,7 +175,7 @@ export default function CreateGroupForm() {
             </div>
           </form>
           <p className="mt-2 text-xs text-slate-500">
-            Use international phone format. Example: +91XXXXXXXXXX
+            Leave empty and click search to view all available members.
           </p>
         </div>
 

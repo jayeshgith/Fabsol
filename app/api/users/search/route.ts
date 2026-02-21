@@ -46,22 +46,14 @@ export async function GET(req: Request) {
     }
   }
   
-  const query = normalizePhoneNumber(searchParams.get("query") ?? "");
-
-  if (!query) {
-    return NextResponse.json({ users: [] });
-  }
+  const rawQuery = String(searchParams.get("query") ?? "").trim();
+  const normalizedPhoneQuery = normalizePhoneNumber(rawQuery);
 
   const currentUser = await User.findOne({ email: session.user.email })
     .select("_id")
     .lean();
 
   const groupedMemberIds = await Group.distinct("memberIds");
-
-  const escapedQuery = escapeRegex(query);
-  const phonePattern = query.startsWith("+")
-    ? `^${escapedQuery}`
-    : `^\\+?${escapedQuery}`;
 
   const idFilter: { $nin: unknown[]; $ne?: unknown } = {
     $nin: groupedMemberIds,
@@ -70,12 +62,40 @@ export async function GET(req: Request) {
     idFilter.$ne = currentUser._id;
   }
 
-  const users = await User.find({
-    phone: { $regex: phonePattern },
+  const userFilter: Record<string, unknown> = {
     _id: idFilter,
-  })
+  };
+
+  if (rawQuery) {
+    const searchFilters: Record<string, unknown>[] = [
+      {
+        name: {
+          $regex: escapeRegex(rawQuery),
+          $options: "i",
+        },
+      },
+    ];
+
+    if (normalizedPhoneQuery) {
+      const escapedPhoneQuery = escapeRegex(normalizedPhoneQuery);
+      const phonePattern = normalizedPhoneQuery.startsWith("+")
+        ? `^${escapedPhoneQuery}`
+        : `^\\+?${escapedPhoneQuery}`;
+
+      searchFilters.push({
+        phone: {
+          $regex: phonePattern,
+        },
+      });
+    }
+
+    userFilter.$or = searchFilters;
+  }
+
+  const users = await User.find(userFilter)
     .select("_id name email phone image")
-    .limit(10)
+    .sort({ name: 1, email: 1 })
+    .limit(rawQuery ? 25 : 100)
     .lean();
 
   return NextResponse.json({

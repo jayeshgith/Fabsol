@@ -12,7 +12,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { normalizePhoneNumber } from "@/lib/profile";
 
 type GroupMember = {
   id: string;
@@ -59,18 +58,13 @@ export default function EditGroupMembersForm({
     event.preventDefault();
     setMessage("");
 
-    const normalizedQuery = normalizePhoneNumber(query);
-    if (!normalizedQuery) {
-      setResults([]);
-      setMessage("Enter a phone number to search.");
-      return;
-    }
+    const trimmedQuery = query.trim();
 
     setSearching(true);
 
     try {
       const response = await fetch(
-        `/api/users/search?query=${encodeURIComponent(normalizedQuery)}&groupId=${encodeURIComponent(groupId)}`,
+        `/api/users/search?query=${encodeURIComponent(trimmedQuery)}&groupId=${encodeURIComponent(groupId)}`,
         { cache: "no-store" },
       );
 
@@ -85,7 +79,11 @@ export default function EditGroupMembersForm({
       const foundUsers = Array.isArray(data?.users) ? data.users : [];
       setResults(foundUsers);
       if (foundUsers.length === 0) {
-        setMessage("No available users found for this phone number.");
+        setMessage(
+          trimmedQuery
+            ? "No available users found for this name or phone number."
+            : "No available users found right now.",
+        );
       }
     } catch {
       setResults([]);
@@ -160,13 +158,13 @@ export default function EditGroupMembersForm({
       <div className="space-y-6 rounded-2xl border bg-white p-5 shadow-sm sm:p-6">
         <div>
           <p className="mb-2 text-sm font-medium text-slate-700">
-            Search User By Phone
+            Search User By Name or Phone
           </p>
           <form onSubmit={onSearch}>
             <div className="flex w-full max-w-xl items-center space-x-2">
               <Input
                 name="query"
-                placeholder="+917099482122"
+                placeholder="Name or phone number"
                 type="text"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
@@ -178,7 +176,7 @@ export default function EditGroupMembersForm({
             </div>
           </form>
           <p className="mt-2 text-xs text-slate-500">
-            Only users not already in another group can be added.
+            Leave empty and click search to view all available members.
           </p>
         </div>
 
