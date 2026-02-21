@@ -1,11 +1,10 @@
-import mongoose, { Schema, models, model } from "mongoose";
+import mongoose, { Schema, models } from "mongoose";
 
 const UserSchema = new Schema(
   {
     email: { type: String, unique: true, required: true },
     name: { type: String, default: "" },
     image: { type: String, default: "" },
-    bio: { type: String, default: "" },
     phone: { type: String, default: "" },
     passwordHash: { type: String, default: "" },
     resetToken: { type: String, default: null },
@@ -15,5 +14,3 @@ const UserSchema = new Schema(
 );
 
 export const User = models.User || mongoose.model("User", UserSchema);
-
-

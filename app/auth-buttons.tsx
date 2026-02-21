@@ -116,11 +116,14 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { signOut, useSession } from "next-auth/react";
 
-export default function AuthButtons() {
+export default function AuthButtons({
+  showGroupDashboard = false,
+}: {
+  showGroupDashboard?: boolean;
+}) {
   const { data: session, status } = useSession();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
@@ -215,6 +218,16 @@ export default function AuthButtons() {
           >
             Profile
           </Link>
+
+          {showGroupDashboard ? (
+            <Link
+              href="/groups/dashboard"
+              onClick={() => setOpen(false)}
+              className="block px-4 py-3 text-sm hover:bg-white/10"
+            >
+              Group Dashboard
+            </Link>
+          ) : null}
 
           <div className="h-px bg-white/10" />
 

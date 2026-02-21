@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
+import {
+  isProfileComplete,
+  isValidInternationalPhoneNumber,
+  normalizePhoneNumber,
+} from "@/lib/profile";
 import { User } from "@/models/User";
 
 export async function GET() {
@@ -16,8 +21,13 @@ export async function GET() {
     email: session.user.email,
     name: user?.name ?? "",
     image: user?.image ?? "",
-    bio: user?.bio ?? "",
     phone: user?.phone ?? "",
+    profileCompleted: isProfileComplete({
+      name: user?.name ?? "",
+      email: session.user.email,
+      phone: user?.phone ?? "",
+      image: user?.image ?? "",
+    }),
   });
 }
 
@@ -28,19 +38,54 @@ export async function PATCH(req: Request) {
   }
 
   const body = await req.json();
+  const name = String(body.name ?? "").trim();
+  const phone = normalizePhoneNumber(body.phone);
+  const image = String(body.image ?? "").trim();
+
+  if (
+    !isProfileComplete({
+      name,
+      email: session.user.email,
+      phone,
+      image,
+    })
+  ) {
+    const phoneError = !isValidInternationalPhoneNumber(phone)
+      ? "Phone number must be in international format, for example +917099482122."
+      : "Name, email, phone number, and profile image are required.";
+
+    return NextResponse.json(
+      {
+        error: phoneError,
+      },
+      { status: 400 },
+    );
+  }
 
   await connectDB();
+
+  const existingUserWithPhone = await User.findOne({
+    phone,
+    email: { $ne: session.user.email },
+  }).lean();
+
+  if (existingUserWithPhone) {
+    return NextResponse.json(
+      { error: "This phone number is already registered." },
+      { status: 409 },
+    );
+  }
+
   await User.updateOne(
     { email: session.user.email },
     {
       $set: {
-        name: body.name ?? "",
-        image: body.image ?? "",
-        bio: body.bio ?? "",
-        phone: body.phone ?? "",
+        name,
+        image,
+        phone,
       },
     },
   );
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, profileCompleted: true });
 }

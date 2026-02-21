@@ -1,11 +1,24 @@
-
-
 "use client";
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { UploadButton } from "@/lib/uploadthing";
+import {
+  isValidInternationalPhoneNumber,
+  normalizePhoneNumber,
+} from "@/lib/profile";
+
+type ProfileResponse = {
+  email: string;
+  name: string;
+  image: string;
+  phone: string;
+};
+
+function hasValue(value: string) {
+  return value.trim().length > 0;
+}
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -15,24 +28,45 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<ProfileResponse>({
     email: "",
     name: "",
     image: "",
-    bio: "",
     phone: "",
   });
 
   useEffect(() => {
     (async () => {
       const res = await fetch("/api/me", { cache: "no-store" });
+      if (!res.ok) {
+        setMsg("Unable to load profile");
+        setLoading(false);
+        return;
+      }
+
       const data = await res.json();
-      setForm(data);
+      setForm({
+        email: data.email ?? "",
+        name: data.name ?? "",
+        image: data.image ?? "",
+        phone: data.phone ?? "",
+      });
       setLoading(false);
     })();
   }, []);
 
   async function save() {
+    if (!hasValue(form.name) || !hasValue(form.phone) || !hasValue(form.image)) {
+      setMsg("Name, phone and profile image are required.");
+      return;
+    }
+
+    const normalizedPhone = normalizePhoneNumber(form.phone);
+    if (!isValidInternationalPhoneNumber(normalizedPhone)) {
+      setMsg("Use a valid phone format like +917099482122.");
+      return;
+    }
+
     setSaving(true);
     setMsg("");
 
@@ -42,46 +76,38 @@ export default function ProfilePage() {
       body: JSON.stringify({
         name: form.name,
         image: form.image,
-        bio: form.bio,
-        phone: form.phone,
+        phone: normalizedPhone,
       }),
     });
 
     setSaving(false);
 
     if (!res.ok) {
-      setMsg("Update failed");
+      const data = await res.json().catch(() => ({}));
+      setMsg(data?.error ?? "Update failed");
       return;
     }
 
-   
     await update({
       name: form.name,
       image: form.image,
     });
 
     router.refresh();
-
-   
-    const refreshed = await fetch("/api/me", { cache: "no-store" }).then((r) =>
-      r.json(),
-    );
-    setForm(refreshed);
-
     setMsg("Profile updated successfully");
   }
 
-  if (loading)
+  if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <p className="text-lg text-gray-600">Loading...</p>
       </div>
     );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <div className="mx-auto max-w-3xl p-6 md:p-8">
-       
         <div className="mb-8">
           <h1 className="text-4xl font-bold tracking-tight text-slate-900">
             Profile Settings
@@ -91,9 +117,7 @@ export default function ProfilePage() {
           </p>
         </div>
 
-        
         <div className="space-y-6 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-         
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-slate-700">
               Email Address
@@ -102,14 +126,13 @@ export default function ProfilePage() {
               value={form.email}
               disabled
               placeholder="Email"
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-slate-600 placeholder-slate-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-slate-600 placeholder-slate-400"
             />
             <p className="text-xs text-slate-500">
               Your email address cannot be changed
             </p>
           </div>
 
-     
           <div className="space-y-2">
             <label
               htmlFor="name"
@@ -126,7 +149,25 @@ export default function ProfilePage() {
             />
           </div>
 
-         
+          <div className="space-y-2">
+            <label
+              htmlFor="phone"
+              className="block text-sm font-semibold text-slate-700"
+            >
+              Phone Number
+            </label>
+            <input
+              id="phone"
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              placeholder="+917099482122"
+              className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/10"
+            />
+            <p className="text-xs text-slate-500">
+              Include country code, example: +91XXXXXXXXXX
+            </p>
+          </div>
+
           <div className="space-y-3">
             <label className="block text-sm font-semibold text-slate-700">
               Profile Photo
@@ -136,7 +177,7 @@ export default function ProfilePage() {
                 {form.image ? (
                   <img
                     src={form.image}
-                    alt="profile"
+                    alt="Profile"
                     className="h-full w-full object-cover"
                   />
                 ) : (
@@ -167,55 +208,18 @@ export default function ProfilePage() {
                   onUploadError={(error) => setMsg(error.message)}
                 />
                 <p className="mt-2 text-xs text-slate-500">
-                  JPG, PNG up to 2MB
+                  Image formats up to 5MB
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Address Field */}
-          <div className="space-y-2">
-            <label
-              htmlFor="address"
-              className="block text-sm font-semibold text-slate-700"
-            >
-              Address
-            </label>
-            <textarea
-              id="address"
-              value={form.bio}
-              onChange={(e) => setForm({ ...form, bio: e.target.value })}
-              placeholder="Enter your address"
-              rows={3}
-              className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/10"
-            />
-          </div>
-
-          {/* Phone Field */}
-          <div className="space-y-2">
-            <label
-              htmlFor="phone"
-              className="block text-sm font-semibold text-slate-700"
-            >
-              Phone Number
-            </label>
-            <input
-              id="phone"
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              placeholder="Enter your phone number"
-              className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/10"
-            />
-          </div>
-
-         
           <div className="border-t border-slate-200" />
 
-          
           {msg && (
             <div
               className={`rounded-lg px-4 py-3 text-sm ${
-                msg.includes("successful")
+                msg.includes("successfully")
                   ? "border border-green-200 bg-green-50 text-green-800"
                   : "border border-red-200 bg-red-50 text-red-800"
               }`}
@@ -224,11 +228,10 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {/* Save Button */}
           <button
             onClick={save}
             disabled={saving}
-            className="w-full rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-3 font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-3 font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:from-blue-600 hover:to-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {saving ? (
               <span className="flex items-center justify-center gap-2">

@@ -1,5 +1,10 @@
 import RecentTransactions from "./recent-transactions";
 import CashFlow from "./transactions/cashflow";
+import Link from "next/link";
+import { UsersRound } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { auth } from "@/auth";
+import { getGroupAccessByEmail } from "@/lib/group-access";
 
 const DashboardPage = async ({
   searchParams,
@@ -14,9 +19,29 @@ const DashboardPage = async ({
     cfyear = today.getFullYear();
   }
 
+  const session = await auth();
+  let hasOwnedGroups = false;
+
+  if (session?.user?.email) {
+    const groupAccess = await getGroupAccessByEmail(session.user.email);
+    hasOwnedGroups = groupAccess?.hasOwnedGroups ?? false;
+  }
+
   return (
     <div className="max-w-7xl mx-auto py-5">
-      <h1 className="text-4xl font-semibold pb-5">Dashboard</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-5">
+        <h1 className="text-4xl font-semibold">Dashboard</h1>
+        <div className="flex items-center gap-2">
+          {hasOwnedGroups ? (
+            <Button variant="outline" asChild className="gap-2">
+              <Link href="/groups/dashboard">
+                <UsersRound className="h-4 w-4" />
+                Group Dashboard
+              </Link>
+            </Button>
+          ) : null}
+        </div>
+      </div>
       <CashFlow year={cfyear} />
       <RecentTransactions />
     </div>
