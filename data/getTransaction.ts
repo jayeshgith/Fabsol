@@ -15,9 +15,7 @@ export async function getTransaction(transactionId: string) {
 
   await connectDB();
 
-  const tx = await Transaction.findOne({ _id: transactionId, userId })
-    .populate("category", "name type")
-    .lean();
+  const tx = await Transaction.findOne({ _id: transactionId, userId }).lean();
 
   if (!tx) return null;
 
@@ -27,6 +25,10 @@ export async function getTransaction(transactionId: string) {
     amount: tx.amount,
     transactionDate: tx.transactionDate,
     transactionType: tx.transactionType,
-    categoryId: tx.category?._id?.toString(), 
+    accountScope:
+      tx.accountScope === "family" ? ("family" as const) : ("personal" as const),
+    groupId: tx.groupId ? String(tx.groupId) : "",
+    category:
+      typeof tx.category === "string" ? tx.category : String(tx.category ?? ""),
   };
 }

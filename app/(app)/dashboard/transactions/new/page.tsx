@@ -6,12 +6,15 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import NewTransactionForm from "./new-transaction-form";
 
+import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
-import { Category } from "@/models/Category";
+import { Group } from "@/models/Group";
+import { User } from "@/models/User";
 // import dynamic from "next/dynamic";
 
 // const NewTransactionForm = dynamic(() => import("./new-transaction-form"), {
@@ -20,19 +23,27 @@ import { Category } from "@/models/Category";
 
 
 const NewTransactionPage = async () => {
+  const session = await auth();
+  if (!session?.user?.email) {
+    redirect("/login");
+  }
+
   await connectDB();
- 
 
+  const currentUser = await User.findOne({ email: session.user.email })
+    .select("_id")
+    .lean();
 
-  const categories = await Category.find().lean();
-   console.log("CATEGORIES FROM DB:", categories.length);
-   console.log("FIRST:", categories[0]);
+  const familyGroupsRaw = currentUser?._id
+    ? await Group.find({ memberIds: String(currentUser._id) })
+        .select("_id name")
+        .sort({ name: 1 })
+        .lean()
+    : [];
 
-  
-  const safeCategories = categories.map((c: any) => ({
-    _id: c._id.toString(),
-    name: c.name,
-    type: c.type,
+  const familyGroups = familyGroupsRaw.map((group) => ({
+    id: String(group._id),
+    name: String(group.name ?? "Unnamed Family"),
   }));
 
   return (
@@ -58,11 +69,8 @@ const NewTransactionPage = async () => {
       </Breadcrumb>
 
       <Card className="mt-8 p-6 max-w-3xl">
-        <CardHeader className="text-2xl font-bold">
-          <CardTitle>New Transaction</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <NewTransactionForm categories={safeCategories} />
+        <CardContent className="pt-6">
+          <NewTransactionForm familyGroups={familyGroups} />
         </CardContent>
       </Card>
     </div>

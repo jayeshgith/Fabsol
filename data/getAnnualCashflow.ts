@@ -3,7 +3,24 @@ import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
 import { Transaction } from "@/models/Transaction";
 
-export async function getAnnualCashflow(year: number) {
+type TransactionScope = "personal" | "family";
+
+function getScopeFilter(scope: TransactionScope) {
+  if (scope === "family") {
+    return { accountScope: "family" as const };
+  }
+
+  return {
+    $or: [{ accountScope: "personal" }, { accountScope: { $exists: false } }],
+  };
+}
+
+export async function getAnnualCashflow(
+  year: number,
+  options?: {
+    scope?: TransactionScope;
+  },
+) {
  
   const session = await auth();
 
@@ -14,6 +31,7 @@ export async function getAnnualCashflow(year: number) {
 
 
   await connectDB();
+  const scope = options?.scope ?? "personal";
 
   const start = new Date(year, 0, 1);
   const end = new Date(year + 1, 0, 1);
@@ -22,6 +40,7 @@ export async function getAnnualCashflow(year: number) {
     {
       $match: {
         userId,
+        ...getScopeFilter(scope),
         transactionDate: { $gte: start, $lt: end },
       },
     },
@@ -44,11 +63,11 @@ export async function getAnnualCashflow(year: number) {
 
   for (let m = 1; m <= 12; m++) {
     const totalIncome =
-      rows.find((r: any) => r._id.month === m && r._id.type === "income")
+      rows.find((r) => r._id.month === m && r._id.type === "income")
         ?.total ?? 0;
 
     const totalExpenses =
-      rows.find((r: any) => r._id.month === m && r._id.type === "expense")
+      rows.find((r) => r._id.month === m && r._id.type === "expense")
         ?.total ?? 0;
 
     result.push({

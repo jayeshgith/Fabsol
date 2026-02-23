@@ -4,8 +4,10 @@ import { transactionFormSchema } from "../validators/transactionFormSchema";
 export const transactionFormDefaultValues: z.infer<
   typeof transactionFormSchema
 > = {
+  accountScope: "personal",
   transactionType: "income",
-  categoryId: "",
+  groupId: "",
+  category: "",
   transactionDate: new Date(),
   amount: 0,
   description: "",

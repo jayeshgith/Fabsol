@@ -2,21 +2,31 @@
 
 import TransactionForm from "@/components/transaction-form";
 import { transactionFormSchema } from "@/lib/validators/transactionFormSchema";
-import { type Category } from "@/types/Category";
 import z from "zod";
 import { createTransactionAction } from "./actions";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
-const NewTransactionForm = ({ categories }: { categories: Category[] }) => {
+type FamilyGroup = {
+  id: string;
+  name: string;
+};
+
+const NewTransactionForm = ({
+  familyGroups,
+}: {
+  familyGroups: FamilyGroup[];
+}) => {
   const router = useRouter();
 
   const handleSubmit = async (data: z.input<typeof transactionFormSchema>) => {
     const result = await createTransactionAction({
+      accountScope: data.accountScope,
       transactionType: data.transactionType,
       amount: Number(data.amount),
-      categoryId: data.categoryId, 
-      transactionDate: data.transactionDate, 
+      groupId: data.groupId,
+      category: data.category,
+      transactionDate: data.transactionDate,
       description: data.description,
     });
 
@@ -37,7 +47,13 @@ const NewTransactionForm = ({ categories }: { categories: Category[] }) => {
     }
   };
 
-  return <TransactionForm categories={categories} onsubmit={handleSubmit} />;
+  return (
+    <TransactionForm
+      familyGroups={familyGroups}
+      onsubmit={handleSubmit}
+      showDynamicTitle
+    />
+  );
 };
 
 export default NewTransactionForm;

@@ -2,20 +2,26 @@
 
 import TransactionForm from "@/components/transaction-form";
 import { transactionFormSchema } from "@/lib/validators/transactionFormSchema";
-import type { Category } from "@/types/Category";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import z from "zod";
 import { updateTransactionAction } from "./actions";
 
+type FamilyGroup = {
+  id: string;
+  name: string;
+};
+
 const EditTransactionForm = ({
-  categories,
+  familyGroups,
   transaction,
 }: {
-  categories: Category[];
+  familyGroups: FamilyGroup[];
   transaction: {
     id: string;
-    categoryId: string;
+    category: string;
+    accountScope: "personal" | "family";
+    groupId: string;
     amount: number;
     description: string;
     transactionDate: Date;
@@ -23,44 +29,52 @@ const EditTransactionForm = ({
   };
 }) => {
   const router = useRouter();
-const handleSubmit = async (data: z.input<typeof transactionFormSchema>) => {
-  const result = await updateTransactionAction({
-    id: transaction.id, 
-    transactionType: data.transactionType,
-    amount: Number(data.amount),
-    categoryId: data.categoryId, 
-    transactionDate: data.transactionDate, 
-    description: data.description,
-  });
-
-  if (result.success) {
-    toast.success("Transaction updated successfully.", { duration: 4000 });
-    router.push(
-      "/dashboard/transactions?month=" +
-        (new Date().getMonth() + 1) +
-        "&year=" +
-        new Date().getFullYear(),
-    );
-  } else {
-    toast.error("Failed to update transaction.", {
-      description: result.message,
-      duration: 4000,
+  const handleSubmit = async (data: z.input<typeof transactionFormSchema>) => {
+    const result = await updateTransactionAction({
+      id: transaction.id,
+      accountScope: data.accountScope,
+      transactionType: data.transactionType,
+      groupId: data.groupId,
+      amount: Number(data.amount),
+      category: data.category,
+      transactionDate: data.transactionDate,
+      description: data.description,
     });
-  }
-};
+
+    if (result.success) {
+      toast.success("Transaction updated successfully.", { duration: 4000 });
+      if (data.accountScope === "family") {
+        router.push("/dashboard");
+        router.refresh();
+        return;
+      }
+
+      router.push(
+        "/dashboard/transactions?month=" +
+          (new Date().getMonth() + 1) +
+          "&year=" +
+          new Date().getFullYear(),
+      );
+      router.refresh();
+    } else {
+      toast.error("Failed to update transaction.", {
+        description: result.message,
+        duration: 4000,
+      });
+    }
+  };
 
 
   return (
     <TransactionForm
-      categories={categories}
+      familyGroups={familyGroups}
       onsubmit={handleSubmit}
       defaultValues={{
-        transactionType:
-          transaction.transactionType ||
-          categories.find((c) => c._id === transaction.categoryId)?.type ||
-          "income",
+        accountScope: transaction.accountScope,
+        transactionType: transaction.transactionType || "income",
+        groupId: transaction.groupId ?? "",
         amount: transaction.amount,
-        categoryId: transaction.categoryId,
+        category: transaction.category,
         description: transaction.description,
         transactionDate: new Date(transaction.transactionDate),
       }}

@@ -2,8 +2,14 @@ import { addDays } from "date-fns";
 import z from "zod";
 
 export const transactionFormSchema = z.object({
+  accountScope: z.enum(["personal", "family"]),
   transactionType: z.enum(["income", "expense"]),
-  categoryId: z.string().min(1, "Please select a valid category"),
+  groupId: z.string().optional(),
+  category: z
+    .string()
+    .trim()
+    .min(1, "Category is required.")
+    .max(100, "Category must be at most 100 characters long."),
 
   transactionDate: z.coerce
     .date()
@@ -16,4 +22,12 @@ export const transactionFormSchema = z.object({
     .string()
     .min(3, "Description must be at least 3 characters long.")
     .max(255, "Description must be at most 255 characters long."),
+}).superRefine((value, ctx) => {
+  if (value.accountScope === "family" && !value.groupId?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["groupId"],
+      message: "No family found for this account.",
+    });
+  }
 });

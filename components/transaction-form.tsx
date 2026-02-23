@@ -4,6 +4,7 @@ import { transactionFormDefaultValues } from "@/lib/constants";
 import { transactionFormSchema } from "@/lib/validators/transactionFormSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
+import { useEffect } from "react";
 import z from "zod";
 import {
   Form,
@@ -27,57 +28,118 @@ import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Input } from "./ui/input";
-// import { Category } from "@/models/Category";
-import { Category } from "@/types/Category";
+
+type FamilyGroup = {
+  id: string;
+  name: string;
+};
 
 type Props = {
-  categories: Category[];
+  familyGroups: FamilyGroup[];
   onsubmit: (data: z.input<typeof transactionFormSchema>) => Promise<void>;
+  showDynamicTitle?: boolean;
   defaultValues?: {
+    accountScope: "personal" | "family";
     transactionType: "income" | "expense";
+    groupId: string;
     amount: number;
-    categoryId: string;
+    category: string;
     description: string;
     transactionDate: Date;
   };
 };
 
-const TransactionForm = ({ categories, onsubmit, defaultValues }: Props) => {
+const TransactionForm = ({
+  familyGroups,
+  onsubmit,
+  showDynamicTitle = false,
+  defaultValues,
+}: Props) => {
   const form = useForm<z.input<typeof transactionFormSchema>>({
     resolver: zodResolver(transactionFormSchema),
     defaultValues: {
-      amount: 0,
-      categoryId: "",
-      description: "",
-      transactionDate: new Date(),
-      transactionType: "income",
+      ...transactionFormDefaultValues,
       ...defaultValues,
     },
   });
 
-  const transactionType = useWatch({
+  const accountScope = useWatch({
     control: form.control,
-    name: "transactionType",
+    name: "accountScope",
   });
-  // console.log("CATEGORIES PROP LENGTH:", categories?.length);
-  // console.log("SAMPLE CATEGORY:", categories?.[0]);
+  const selectedGroupId = useWatch({
+    control: form.control,
+    name: "groupId",
+  });
 
-  const filteredCategories = categories.filter(
-  
-    (category) => category.type === transactionType,
+  useEffect(() => {
+    if (accountScope !== "family") return;
 
-    
-  );
+    const currentGroupId = String(form.getValues("groupId") ?? "").trim();
+    const hasCurrentGroup = familyGroups.some(
+      (group) => group.id === currentGroupId,
+    );
 
-  console.log("Form data:", form.getValues());
+    if (hasCurrentGroup) return;
+
+    form.setValue("groupId", familyGroups[0]?.id ?? "", {
+      shouldValidate: true,
+    });
+  }, [accountScope, familyGroups, form]);
+
+  const selectedFamilyName =
+    familyGroups.find((group) => group.id === selectedGroupId)?.name ??
+    familyGroups[0]?.name ??
+    "No family available";
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onsubmit)}>
+        {showDynamicTitle ? (
+          <h2 className="mb-6 text-3xl font-bold tracking-tight">
+            {accountScope === "family" ? "Family Transaction" : "New Transaction"}
+          </h2>
+        ) : null}
         <fieldset
           disabled={form.formState.isSubmitting}
           className="grid grid-cols-2 gap-y-5 gap-x-2 items-start"
         >
+          <FormField
+            control={form.control}
+            name="accountScope"
+            render={({ field }) => {
+              return (
+                <FormItem>
+                  <FormLabel>Account Type</FormLabel>
+                  <FormControl>
+                    <Select
+                      onValueChange={(newValue) => {
+                        field.onChange(newValue);
+                        if (newValue === "personal") {
+                          form.setValue("groupId", "");
+                        }
+                      }}
+                      value={field.value}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="w-full">
+                        <SelectItem value="personal">Personal</SelectItem>
+                        <SelectItem
+                          value="family"
+                          disabled={familyGroups.length === 0}
+                        >
+                          Family
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              );
+            }}
+          />
           <FormField
             control={form.control}
             name="transactionType"
@@ -89,7 +151,6 @@ const TransactionForm = ({ categories, onsubmit, defaultValues }: Props) => {
                     <Select
                       onValueChange={(newValue) => {
                         field.onChange(newValue);
-                        form.setValue("categoryId", "");
                       }}
                       value={field.value}
                     >
@@ -107,26 +168,32 @@ const TransactionForm = ({ categories, onsubmit, defaultValues }: Props) => {
               );
             }}
           />
+          {accountScope === "family" ? (
+            <FormField
+              control={form.control}
+              name="groupId"
+              render={() => {
+                return (
+                  <FormItem>
+                    <FormLabel>Family</FormLabel>
+                    <FormControl>
+                      <Input value={selectedFamilyName} disabled />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
+          ) : null}
           <FormField
             control={form.control}
-            name="categoryId"
+            name="category"
             render={({ field }) => {
               return (
                 <FormItem>
                   <FormLabel>Category</FormLabel>
                   <FormControl>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {filteredCategories.map((category) => (
-                          <SelectItem key={category._id} value={category._id}>
-                            {category.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Input {...field} placeholder="Enter category" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

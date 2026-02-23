@@ -1,4 +1,4 @@
-import { Schema, model, models, Types } from "mongoose";
+import { Schema, model, models } from "mongoose";
 
 const TransactionSchema = new Schema(
   {
@@ -21,14 +21,27 @@ const TransactionSchema = new Schema(
       required: true,
     },
     category: {
-      type: Types.ObjectId,
-      ref: "Category",
+      type: String,
       required: true,
+      trim: true,
     },
     transactionType: {
       type: String,
       enum: ["income", "expense"],
       required: false,
+    },
+    accountScope: {
+      type: String,
+      enum: ["personal", "family"],
+      required: true,
+      default: "personal",
+      index: true,
+    },
+    groupId: {
+      type: String,
+      required: false,
+      index: true,
+      default: null,
     },
   },
 

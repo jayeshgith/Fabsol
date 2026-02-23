@@ -19,8 +19,8 @@ export async function POST(req: Request) {
 
   if (!groupAccess.canCreateGroup) {
     const errorMessage = groupAccess.hasOwnedGroups
-      ? "You already created a group. Delete that group before creating a new one."
-      : "You are already a member in another group, so you cannot create a group.";
+      ? "You already created a family. Delete that family before creating a new one."
+      : "You are already a member in another family, so you cannot create a family.";
 
     return NextResponse.json(
       { error: errorMessage },
@@ -37,14 +37,14 @@ export async function POST(req: Request) {
 
   if (!name) {
     return NextResponse.json(
-      { error: "Group name is required." },
+      { error: "Family name is required." },
       { status: 400 },
     );
   }
 
   if (memberIds.length === 0) {
     return NextResponse.json(
-      { error: "Add at least one family member to create a group." },
+      { error: "Add at least one family member to create a family." },
       { status: 400 },
     );
   }

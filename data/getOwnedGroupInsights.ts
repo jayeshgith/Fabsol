@@ -29,6 +29,7 @@ type RecentTransactionItem = {
   id: string;
   memberName: string;
   memberEmail: string;
+  accountScope: "personal" | "family";
   description: string;
   amount: number;
   transactionDate: Date | null;
@@ -83,9 +84,46 @@ function buildAnnualCashflow(rows: AggregateRow[]) {
   return result;
 }
 
+function getCategoryName(category: unknown): string {
+  if (typeof category === "string" && category.trim()) {
+    return category.trim();
+  }
+
+  if (category && typeof category === "object" && "name" in category) {
+    const name = (category as { name?: string }).name;
+    if (typeof name === "string" && name.trim()) {
+      return name.trim();
+    }
+  }
+
+  return "Unknown";
+}
+
+function getTransactionType(
+  transactionType: unknown,
+  category: unknown,
+): "income" | "expense" {
+  if (transactionType === "income" || transactionType === "expense") {
+    return transactionType;
+  }
+
+  if (category && typeof category === "object" && "type" in category) {
+    const type = (category as { type?: unknown }).type;
+    if (type === "income" || type === "expense") {
+      return type;
+    }
+  }
+
+  return "expense";
+}
+
 export async function getOwnedGroupInsights(params: {
   year: number;
   groupId?: string;
+  recentScope?: "all" | "family" | "personal";
+  recentMonth?: number;
+  recentYear?: number;
+  recentDate?: string;
 }): Promise<GroupInsightsResult | null> {
   const session = await auth();
   if (!session?.user?.email) return null;
@@ -182,7 +220,17 @@ export async function getOwnedGroupInsights(params: {
   const currentYear = new Date().getFullYear();
 
   const earliestGroupTransaction = await Transaction.findOne({
-    userId: { $in: groupEmails },
+    $or: [
+      {
+        accountScope: "family",
+        groupId: selectedGroupId,
+        userId: { $in: groupEmails },
+      },
+      {
+        userId: { $in: groupEmails },
+        $or: [{ accountScope: "personal" }, { accountScope: { $exists: false } }],
+      },
+    ],
   })
     .sort({ transactionDate: 1 })
     .select("transactionDate")
@@ -205,6 +253,7 @@ export async function getOwnedGroupInsights(params: {
     {
       $match: {
         userId: owner.email,
+        $or: [{ accountScope: "personal" }, { accountScope: { $exists: false } }],
         transactionDate: { $gte: start, $lt: end },
       },
     },
@@ -222,6 +271,8 @@ export async function getOwnedGroupInsights(params: {
   const groupAnnualRows = await Transaction.aggregate<AggregateRow>([
     {
       $match: {
+        accountScope: "family",
+        groupId: selectedGroupId,
         userId: { $in: groupEmails },
         transactionDate: { $gte: start, $lt: end },
       },
@@ -240,6 +291,8 @@ export async function getOwnedGroupInsights(params: {
   const memberSummaryRows = await Transaction.aggregate<AggregateRow>([
     {
       $match: {
+        accountScope: "family",
+        groupId: selectedGroupId,
         userId: { $in: groupEmails },
         transactionDate: { $gte: start, $lt: end },
       },
@@ -255,18 +308,75 @@ export async function getOwnedGroupInsights(params: {
     },
   ]);
 
-  const groupRecentRows = await Transaction.find({
+  const groupRecentDateFilter: { $gte: Date; $lt: Date } | undefined = (() => {
+    const rawDate = String(params.recentDate ?? "").trim();
+    if (rawDate) {
+      const parsedDate = new Date(rawDate);
+      if (!Number.isNaN(parsedDate.getTime())) {
+        const start = new Date(
+          parsedDate.getFullYear(),
+          parsedDate.getMonth(),
+          parsedDate.getDate(),
+        );
+        const end = new Date(start);
+        end.setDate(end.getDate() + 1);
+        return { $gte: start, $lt: end };
+      }
+    }
+
+    const yearFilter = Number(params.recentYear);
+    const hasValidYear = Number.isInteger(yearFilter) && yearFilter > 1900;
+    if (!hasValidYear) return undefined;
+
+    const monthFilter = Number(params.recentMonth);
+    const hasValidMonth = Number.isInteger(monthFilter) && monthFilter >= 1 && monthFilter <= 12;
+
+    if (hasValidMonth) {
+      return {
+        $gte: new Date(yearFilter, monthFilter - 1, 1),
+        $lt: new Date(yearFilter, monthFilter, 1),
+      };
+    }
+
+    return {
+      $gte: new Date(yearFilter, 0, 1),
+      $lt: new Date(yearFilter + 1, 0, 1),
+    };
+  })();
+
+  const recentScope = params.recentScope ?? "all";
+  const familyRecentClause = {
+    accountScope: "family",
+    groupId: selectedGroupId,
     userId: { $in: groupEmails },
-  })
-    .populate("category", "name type")
+  };
+  const personalRecentClause = {
+    userId: { $in: groupEmails },
+    $or: [{ accountScope: "personal" }, { accountScope: { $exists: false } }],
+  };
+
+  const groupRecentFilter: Record<string, unknown> =
+    recentScope === "family"
+      ? familyRecentClause
+      : recentScope === "personal"
+        ? personalRecentClause
+        : {
+            $or: [familyRecentClause, personalRecentClause],
+          };
+
+  if (groupRecentDateFilter) {
+    groupRecentFilter.transactionDate = groupRecentDateFilter;
+  }
+
+  const groupRecentRows = await Transaction.find(groupRecentFilter)
     .sort({ transactionDate: -1 })
     .limit(25)
     .lean();
 
   const personalRecentRows = await Transaction.find({
     userId: owner.email,
+    $or: [{ accountScope: "personal" }, { accountScope: { $exists: false } }],
   })
-    .populate("category", "name type")
     .sort({ transactionDate: -1 })
     .limit(10)
     .lean();
@@ -294,27 +404,23 @@ export async function getOwnedGroupInsights(params: {
 
   const groupRecentTransactions: RecentTransactionItem[] = groupRecentRows.map(
     (transaction) => {
-      const categoryObj =
-        transaction.category &&
-        typeof transaction.category === "object" &&
-        "name" in transaction.category
-          ? (transaction.category as { name?: string; type?: string })
-          : undefined;
-
       const memberEmail = String(transaction.userId ?? "");
 
       return {
         id: String(transaction._id),
         memberName: memberNameMap.get(memberEmail) ?? memberEmail,
         memberEmail,
+        accountScope:
+          transaction.accountScope === "family" ? "family" : "personal",
         description: String(transaction.description ?? ""),
         amount: Number(transaction.amount ?? 0),
         transactionDate: transaction.transactionDate
           ? new Date(transaction.transactionDate)
           : null,
-        category: String(categoryObj?.name ?? "Unknown"),
-        transactionType: String(
-          transaction.transactionType ?? categoryObj?.type ?? "expense",
+        category: getCategoryName(transaction.category),
+        transactionType: getTransactionType(
+          transaction.transactionType,
+          transaction.category,
         ),
       };
     },
@@ -322,25 +428,21 @@ export async function getOwnedGroupInsights(params: {
 
   const personalRecentTransactions: RecentTransactionItem[] = personalRecentRows.map(
     (transaction) => {
-      const categoryObj =
-        transaction.category &&
-        typeof transaction.category === "object" &&
-        "name" in transaction.category
-          ? (transaction.category as { name?: string; type?: string })
-          : undefined;
-
       return {
         id: String(transaction._id),
         memberName: ownerName,
         memberEmail: owner.email,
+        accountScope:
+          transaction.accountScope === "family" ? "family" : "personal",
         description: String(transaction.description ?? ""),
         amount: Number(transaction.amount ?? 0),
         transactionDate: transaction.transactionDate
           ? new Date(transaction.transactionDate)
           : null,
-        category: String(categoryObj?.name ?? "Unknown"),
-        transactionType: String(
-          transaction.transactionType ?? categoryObj?.type ?? "expense",
+        category: getCategoryName(transaction.category),
+        transactionType: getTransactionType(
+          transaction.transactionType,
+          transaction.category,
         ),
       };
     },

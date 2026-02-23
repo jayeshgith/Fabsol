@@ -26,6 +26,9 @@ export default function CreateGroupForm() {
   const [groupName, setGroupName] = useState("");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchUser[]>([]);
+  const [resultsVisible, setResultsVisible] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [lastSearchedQuery, setLastSearchedQuery] = useState("");
   const [selectedMembers, setSelectedMembers] = useState<SearchUser[]>([]);
   const [searching, setSearching] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -41,8 +44,17 @@ export default function CreateGroupForm() {
     setMessage("");
 
     const trimmedQuery = query.trim();
+    const isToggleHide =
+      resultsVisible && hasSearched && trimmedQuery === lastSearchedQuery;
+
+    if (isToggleHide) {
+      setResultsVisible(false);
+      return;
+    }
 
     setSearching(true);
+    setHasSearched(true);
+    setResultsVisible(true);
 
     try {
       const res = await fetch(
@@ -61,12 +73,15 @@ export default function CreateGroupForm() {
 
       const foundUsers = Array.isArray(data?.users) ? data.users : [];
       setResults(foundUsers);
+      setLastSearchedQuery(trimmedQuery);
       if (foundUsers.length === 0) {
         setMessage(
           trimmedQuery
             ? "No users found for this name or phone number."
             : "No available users found right now.",
         );
+      } else {
+        setMessage("");
       }
     } catch {
       setResults([]);
@@ -92,12 +107,12 @@ export default function CreateGroupForm() {
 
     const trimmedGroupName = groupName.trim();
     if (!trimmedGroupName) {
-      setMessage("Group name is required.");
+      setMessage("Family name is required.");
       return;
     }
 
     if (selectedMembers.length === 0) {
-      setMessage("Add at least one family member to create group.");
+      setMessage("Add at least one family member to create family.");
       return;
     }
 
@@ -116,7 +131,7 @@ export default function CreateGroupForm() {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setMessage(data?.error ?? "Unable to create group.");
+        setMessage(data?.error ?? "Unable to create family.");
         setCreating(false);
         return;
       }
@@ -124,7 +139,7 @@ export default function CreateGroupForm() {
       router.push("/groups/dashboard");
       router.refresh();
     } catch {
-      setMessage("Something went wrong while creating group.");
+      setMessage("Something went wrong while creating family.");
       setCreating(false);
     }
   }
@@ -133,9 +148,9 @@ export default function CreateGroupForm() {
     <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6">
       <div className="mb-6 flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Create Group</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Create Family</h1>
           <p className="mt-1 text-sm text-slate-600">
-            Create your family group and add members by name or phone number.
+            Create your family and add members by name or phone number.
           </p>
         </div>
         <Button variant="outline" asChild>
@@ -146,7 +161,7 @@ export default function CreateGroupForm() {
       <div className="space-y-6 rounded-2xl border bg-white p-5 shadow-sm sm:p-6">
         <div>
           <label className="mb-2 block text-sm font-medium text-slate-700">
-            Group / Family Name
+            Family Name
           </label>
           <Input
             value={groupName}
@@ -180,39 +195,53 @@ export default function CreateGroupForm() {
         </div>
 
         <div className="space-y-3">
-          {results.map((user) => {
-            const isAdded = selectedMemberIdSet.has(user.id);
+          {resultsVisible
+            ? results.map((user) => {
+                const isAdded = selectedMemberIdSet.has(user.id);
 
-            return (
-              <div
-                key={user.id}
-                className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-slate-900">
-                    {user.name || "User"}
-                  </p>
-                  <p className="truncate text-xs text-slate-600">{user.phone}</p>
-                  <p className="truncate text-xs text-slate-500">{user.email}</p>
-                </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={isAdded ? "secondary" : "default"}
-                  disabled={isAdded}
-                  onClick={() => addMember(user)}
-                  className="gap-1.5"
-                >
-                  <UserPlus className="h-4 w-4" />
-                  {isAdded ? "Added" : "Add Member"}
-                </Button>
-              </div>
-            );
-          })}
+                return (
+                  <div
+                    key={user.id}
+                    className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-slate-900">
+                        {user.name || "User"}
+                      </p>
+                      <p className="truncate text-xs text-slate-600">
+                        {user.phone}
+                      </p>
+                      <p className="truncate text-xs text-slate-500">
+                        {user.email}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={isAdded ? "secondary" : "default"}
+                      disabled={isAdded}
+                      onClick={() => addMember(user)}
+                      className="gap-1.5"
+                    >
+                      <UserPlus className="h-4 w-4" />
+                      {isAdded ? "Added" : "Add Member"}
+                    </Button>
+                  </div>
+                );
+              })
+            : null}
 
-          {results.length === 0 && !searching ? (
+          {resultsVisible && results.length === 0 && !searching ? (
             <div className="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-500">
-              Search results will appear here.
+              {hasSearched
+                ? "No users found for this search."
+                : "Search results will appear here."}
+            </div>
+          ) : null}
+
+          {!resultsVisible && !searching ? (
+            <div className="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-500">
+              Search results are hidden. Click search to show members.
             </div>
           ) : null}
         </div>
@@ -268,7 +297,7 @@ export default function CreateGroupForm() {
             disabled={creating}
             className="ml-auto"
           >
-            {creating ? "Creating Group..." : "Create Group"}
+            {creating ? "Creating Family..." : "Create Family"}
           </Button>
         </div>
 

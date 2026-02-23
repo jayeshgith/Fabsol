@@ -3,7 +3,25 @@ import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
 import { Transaction } from "@/models/Transaction";
 
-export async function getTransactionYearsRange() {
+type TransactionScope = "all" | "personal" | "family";
+
+function getScopeFilter(scope: TransactionScope) {
+  if (scope === "all") {
+    return {};
+  }
+
+  if (scope === "family") {
+    return { accountScope: "family" as const };
+  }
+
+  return {
+    $or: [{ accountScope: "personal" }, { accountScope: { $exists: false } }],
+  };
+}
+
+export async function getTransactionYearsRange(options?: {
+  scope?: TransactionScope;
+}) {
   
   const session = await auth();
 
@@ -14,8 +32,12 @@ export async function getTransactionYearsRange() {
 
 
   await connectDB();
+  const scope = options?.scope ?? "all";
 
-  const earliest = await Transaction.findOne({ userId })
+  const earliest = await Transaction.findOne({
+    userId,
+    ...getScopeFilter(scope),
+  })
     .sort({ transactionDate: 1 })
     .lean();
 

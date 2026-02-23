@@ -4,9 +4,11 @@ import DeleteTransactionDialog from "./delete-transaction-dialog";
 import { format } from "date-fns";
 import { notFound } from "next/navigation";
 
+import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
-import { Category } from "@/models/Category";
+import { Group } from "@/models/Group";
 import { Transaction } from "@/models/Transaction";
+import { User } from "@/models/User";
 
 const EditTransactionPage = async ({
   params,
@@ -17,28 +19,50 @@ const EditTransactionPage = async ({
   const transactionId = resolvedParams.transactionId;
 
   if (!transactionId) return notFound();
+  const session = await auth();
+  if (!session?.user?.email) return notFound();
+
   await connectDB();
 
-  const categoriesRaw = await Category.find().lean();
-  const categories = categoriesRaw.map((c: any) => ({
-    _id: c._id.toString(),
-    name: c.name,
-    type: c.type,
-  }));
-
-  const tx = await Transaction.findById(transactionId)
-    .populate("category", "name type")
+  const tx = await Transaction.findOne({
+    _id: transactionId,
+    userId: session.user.email,
+  })
     .lean();
 
   if (!tx) return notFound();
+
+  const currentUser = await User.findOne({ email: session.user.email })
+    .select("_id")
+    .lean();
+
+  const familyGroupsRaw = currentUser?._id
+    ? await Group.find({ memberIds: String(currentUser._id) })
+        .select("_id name")
+        .sort({ name: 1 })
+        .lean()
+    : [];
+
+  const familyGroups = familyGroupsRaw.map((group) => ({
+    id: String(group._id),
+    name: String(group.name ?? "Unnamed Family"),
+  }));
 
   const transaction = {
     id: tx._id.toString(),
     amount: tx.amount,
     description: tx.description,
     transactionDate: tx.transactionDate,
-    categoryId: tx.category?._id?.toString() ?? "",
-    transactionType: tx.transactionType, 
+    accountScope:
+      tx.accountScope === "family" ? ("family" as const) : ("personal" as const),
+    groupId: tx.groupId ? String(tx.groupId) : "",
+    category:
+      typeof tx.category === "string" && tx.category.trim()
+        ? tx.category.trim()
+        : tx.category && typeof tx.category === "object" && "name" in tx.category
+          ? String((tx.category as { name?: string }).name ?? "")
+          : "",
+    transactionType: tx.transactionType,
   };
 
   return (
@@ -58,7 +82,7 @@ const EditTransactionPage = async ({
         </CardHeader>
         <CardContent>
           <EditTransactionForm
-            categories={categories}
+            familyGroups={familyGroups}
             transaction={transaction}
           />
         </CardContent>

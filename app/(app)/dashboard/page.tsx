@@ -21,10 +21,14 @@ const DashboardPage = async ({
 
   const session = await auth();
   let hasOwnedGroups = false;
+  let hasFamilyMembership = false;
 
   if (session?.user?.email) {
     const groupAccess = await getGroupAccessByEmail(session.user.email);
     hasOwnedGroups = groupAccess?.hasOwnedGroups ?? false;
+    hasFamilyMembership =
+      (groupAccess?.hasOwnedGroups ?? false) ||
+      (groupAccess?.isMemberInOtherGroup ?? false);
   }
 
   return (
@@ -42,8 +46,34 @@ const DashboardPage = async ({
           ) : null}
         </div>
       </div>
-      <CashFlow year={cfyear} />
-      <RecentTransactions />
+      <CashFlow
+        year={cfyear}
+        scope="personal"
+        title="My Personal Cash Flow"
+        showFilters
+      />
+      <RecentTransactions
+        scope="personal"
+        title="My Personal Recent Transactions"
+        showActions
+      />
+
+      {hasFamilyMembership ? (
+        <>
+          <CashFlow
+            year={cfyear}
+            scope="family"
+            title="My Family Transaction Cash Flow"
+            showFilters={false}
+          />
+          <RecentTransactions
+            scope="family"
+            title="My Family Transaction History"
+            showActions={false}
+            showRowActions
+          />
+        </>
+      ) : null}
     </div>
   );
 };

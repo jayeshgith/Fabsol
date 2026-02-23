@@ -50,7 +50,7 @@ export default async function AppLayout({
               href="/groups/new"
               className="rounded-lg border border-white/25 px-3 py-2 text-sm font-semibold hover:bg-white/10"
             >
-              Create Group
+              Create Family
             </Link>
           ) : null}
           <AuthButtons showGroupDashboard={hasOwnedGroups} />
