@@ -64,7 +64,7 @@ const RecentTransactions = async ({
                 <TableHead>Description</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Category</TableHead>
-                {scope === "family" ? <TableHead>History</TableHead> : null}
+                {scope === "family" ? <TableHead>Family</TableHead> : null}
                 <TableHead>Amount</TableHead>
                 {showRowActions ? (
                   <TableHead className="text-right">Actions</TableHead>
