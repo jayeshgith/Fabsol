@@ -1,6 +1,7 @@
 "use client";
 
 import TransactionForm from "@/components/transaction-form";
+import type { Category } from "@/types/Category";
 import { transactionFormSchema } from "@/lib/validators/transactionFormSchema";
 import z from "zod";
 import { createTransactionAction } from "./actions";
@@ -14,8 +15,10 @@ type FamilyGroup = {
 
 const NewTransactionForm = ({
   familyGroups,
+  categories,
 }: {
   familyGroups: FamilyGroup[];
+  categories: Category[];
 }) => {
   const router = useRouter();
 
@@ -50,6 +53,7 @@ const NewTransactionForm = ({
   return (
     <TransactionForm
       familyGroups={familyGroups}
+      categories={categories}
       onsubmit={handleSubmit}
       showDynamicTitle
     />

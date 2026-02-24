@@ -4,11 +4,16 @@ function hasValue(value: string | null | undefined) {
 
 export function normalizePhoneNumber(value: unknown) {
   if (typeof value !== "string") return "";
-  return value.trim().replace(/[\s()-]/g, "");
+  return value.trim().replace(/\D/g, "");
 }
 
+export function isValidTenDigitPhoneNumber(value: string) {
+  return /^\d{10}$/.test(value);
+}
+
+// Backward-compatible export for existing imports.
 export function isValidInternationalPhoneNumber(value: string) {
-  return /^\+[1-9]\d{7,14}$/.test(value);
+  return isValidTenDigitPhoneNumber(value);
 }
 
 export function isProfileComplete(profile: {
@@ -21,7 +26,7 @@ export function isProfileComplete(profile: {
   return (
     hasValue(profile.name) &&
     hasValue(profile.email) &&
-    isValidInternationalPhoneNumber(normalizedPhone) &&
+    isValidTenDigitPhoneNumber(normalizedPhone) &&
     hasValue(profile.image)
   );
 }

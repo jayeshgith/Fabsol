@@ -4,7 +4,7 @@ import { transactionFormDefaultValues } from "@/lib/constants";
 import { transactionFormSchema } from "@/lib/validators/transactionFormSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import z from "zod";
 import {
   Form,
@@ -28,14 +28,18 @@ import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Input } from "./ui/input";
+import type { Category as CategoryType } from "@/types/Category";
 
 type FamilyGroup = {
   id: string;
   name: string;
 };
 
+type CategoryOption = Pick<CategoryType, "_id" | "name" | "type" | "scope">;
+
 type Props = {
   familyGroups: FamilyGroup[];
+  categories?: CategoryOption[];
   onsubmit: (data: z.input<typeof transactionFormSchema>) => Promise<void>;
   showDynamicTitle?: boolean;
   defaultValues?: {
@@ -51,6 +55,7 @@ type Props = {
 
 const TransactionForm = ({
   familyGroups,
+  categories = [],
   onsubmit,
   showDynamicTitle = false,
   defaultValues,
@@ -71,6 +76,46 @@ const TransactionForm = ({
     control: form.control,
     name: "groupId",
   });
+  const transactionType = useWatch({
+    control: form.control,
+    name: "transactionType",
+  });
+  const selectedCategory = useWatch({
+    control: form.control,
+    name: "category",
+  });
+
+  const filteredCategories = useMemo(() => {
+    const options = categories
+      .filter((category) => category.type === transactionType)
+      .filter(
+        (category) =>
+          !category.scope ||
+          category.scope === accountScope ||
+          category.scope === "social",
+      );
+
+    const uniqueByName = new Map<string, CategoryOption>();
+    for (const category of options) {
+      const normalizedName = category.name.trim().toLowerCase();
+      if (!normalizedName || uniqueByName.has(normalizedName)) continue;
+      uniqueByName.set(normalizedName, category);
+    }
+
+    return Array.from(uniqueByName.values()).sort((a, b) =>
+      a.name.localeCompare(b.name),
+    );
+  }, [accountScope, categories, transactionType]);
+
+  const canUseCategorySelect = filteredCategories.length > 0;
+  const isSelectedCategoryInList = filteredCategories.some(
+    (category) => category.name === selectedCategory,
+  );
+  const [customCategoryRequested, setCustomCategoryRequested] = useState(false);
+  const useCustomCategory =
+    !canUseCategorySelect ||
+    customCategoryRequested ||
+    (Boolean(selectedCategory) && !isSelectedCategoryInList);
 
   useEffect(() => {
     if (accountScope !== "family") return;
@@ -86,6 +131,13 @@ const TransactionForm = ({
       shouldValidate: true,
     });
   }, [accountScope, familyGroups, form]);
+
+  useEffect(() => {
+    if (useCustomCategory || !selectedCategory) return;
+    if (isSelectedCategoryInList) return;
+
+    form.setValue("category", "", { shouldValidate: true });
+  }, [form, isSelectedCategoryInList, selectedCategory, useCustomCategory]);
 
   const selectedFamilyName =
     familyGroups.find((group) => group.id === selectedGroupId)?.name ??
@@ -191,10 +243,55 @@ const TransactionForm = ({
             render={({ field }) => {
               return (
                 <FormItem>
-                  <FormLabel>Category</FormLabel>
+                  <div className="flex items-center justify-between gap-2">
+                    <FormLabel>Category</FormLabel>
+                    {canUseCategorySelect ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setCustomCategoryRequested(!useCustomCategory);
+                          form.setValue("category", "", {
+                            shouldValidate: true,
+                          });
+                        }}
+                      >
+                        {useCustomCategory
+                          ? "Use Category List"
+                          : "Add Category"}
+                      </Button>
+                    ) : null}
+                  </div>
                   <FormControl>
-                    <Input {...field} placeholder="Enter category" />
+                    {useCustomCategory ? (
+                      <Input {...field} placeholder="Enter category" />
+                    ) : (
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent className="w-full">
+                          {filteredCategories.map((category) => (
+                            <SelectItem
+                              key={category._id}
+                              value={category.name}
+                            >
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </FormControl>
+                  {!canUseCategorySelect ? (
+                    <p className="text-xs text-muted-foreground">
+                      No categories found for this type. Enter a new category.
+                    </p>
+                  ) : null}
                   <FormMessage />
                 </FormItem>
               );

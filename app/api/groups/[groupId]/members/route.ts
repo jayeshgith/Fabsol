@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
 import { Group } from "@/models/Group";
 import { Notification } from "@/models/Notification";
+import { Transaction } from "@/models/Transaction";
 import { User } from "@/models/User";
 
 export async function PATCH(
@@ -77,9 +78,30 @@ export async function PATCH(
     ? group.memberIds.map((id: unknown) => String(id))
     : [];
 
+  const removedMemberIds = previousMemberIds.filter(
+    (id) => id !== ownerId && !finalMemberIds.includes(id),
+  );
+
   const newlyAddedMemberIds = finalMemberIds.filter(
     (id) => id !== ownerId && !previousMemberIds.includes(id),
   );
+
+  if (removedMemberIds.length > 0) {
+    const removedMembers = await User.find({ _id: { $in: removedMemberIds } })
+      .select("email")
+      .lean();
+    const removedEmails = removedMembers
+      .map((member) => String(member.email ?? "").trim())
+      .filter(Boolean);
+
+    if (removedEmails.length > 0) {
+      await Transaction.deleteMany({
+        accountScope: "family",
+        groupId: String(groupId),
+        userId: { $in: removedEmails },
+      });
+    }
+  }
 
   if (newlyAddedMemberIds.length > 0) {
     const creatorName =

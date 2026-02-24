@@ -1,7 +1,9 @@
 import "server-only";
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
+import { Group } from "@/models/Group";
 import { Transaction } from "@/models/Transaction";
+import { User } from "@/models/User";
 
 type TransactionScope = "personal" | "family";
 
@@ -58,20 +60,125 @@ export async function getRecentTransactions(
 
   if (!session?.user) return [];
 
-  
+
   const userId = session.user.email!;
 
 
   await connectDB();
   const scope = options?.scope ?? "personal";
+  let transactions: Awaited<ReturnType<typeof Transaction.find>>;
 
-  const transactions = await Transaction.find({
-    userId,
-    ...getScopeFilter(scope),
-  })
-    .sort({ transactionDate: -1 })
-    .limit(5)
-    .lean();
+  if (scope === "family") {
+    const currentUser = await User.findOne({ email: userId }).select("_id").lean();
+    if (!currentUser?._id) return [];
+
+    const memberGroups = await Group.find({
+      memberIds: String(currentUser._id),
+    })
+      .select("_id name ownerId memberIds")
+      .lean();
+    const groupIds = memberGroups.map((group) => String(group._id));
+
+    const memberUserIds = [...new Set(
+      memberGroups.flatMap((group) => {
+        const owner = String(group.ownerId ?? "").trim();
+        const members = Array.isArray(group.memberIds)
+          ? group.memberIds.map((id: unknown) => String(id).trim())
+          : [];
+
+        return [owner, ...members].filter(Boolean);
+      }),
+    )];
+
+    const groupUsers = memberUserIds.length
+      ? await User.find({ _id: { $in: memberUserIds } })
+          .select("_id email name")
+          .lean()
+      : [];
+
+    const userById = new Map(
+      groupUsers.map((user) => [String(user._id), user]),
+    );
+
+    const allowedEmailsByGroup = new Map<string, Set<string>>();
+    memberGroups.forEach((group) => {
+      const ids = [
+        String(group.ownerId ?? "").trim(),
+        ...(Array.isArray(group.memberIds)
+          ? group.memberIds.map((id: unknown) => String(id).trim())
+          : []),
+      ].filter(Boolean);
+
+      const emails = ids
+        .map((id) => String(userById.get(id)?.email ?? "").trim())
+        .filter(Boolean);
+
+      allowedEmailsByGroup.set(String(group._id), new Set(emails));
+    });
+
+    const groupNameById = new Map(
+      memberGroups.map((group) => [
+        String(group._id),
+        String(group.name ?? "Family"),
+      ]),
+    );
+
+    if (groupIds.length === 0) return [];
+
+    const familyClauses = groupIds
+      .map((groupId) => {
+        const emails = Array.from(allowedEmailsByGroup.get(groupId) ?? []);
+        if (emails.length === 0) return null;
+
+        return {
+          groupId,
+          userId: { $in: emails },
+        };
+      })
+      .filter((clause): clause is { groupId: string; userId: { $in: string[] } } =>
+        Boolean(clause),
+      );
+
+    if (familyClauses.length === 0) return [];
+
+    transactions = await Transaction.find({
+      accountScope: "family",
+      $or: familyClauses,
+    })
+      .sort({ transactionDate: -1 })
+      .lean();
+    const memberNameByEmail = new Map(
+      groupUsers.map((member) => [
+        String(member.email ?? ""),
+        String(member.name ?? member.email ?? "Member"),
+      ]),
+    );
+
+    return transactions.map((t) => ({
+      id: t._id.toString(),
+      description: t.description,
+      amount: t.amount,
+      transactionDate: t.transactionDate,
+      category: getCategoryName(t.category),
+      transactionType: getTransactionType(t.transactionType, t.category),
+      canManage: String(t.userId ?? "") === userId,
+      historyLabel:
+        groupNameById.get(String(t.groupId ?? "")) ??
+        (t.accountScope === "family" ? "Family" : "Personal"),
+      memberEmail: String(t.userId ?? ""),
+      memberName:
+        memberNameByEmail.get(String(t.userId ?? "")) ??
+        String(t.userId ?? "Member"),
+    }));
+  } else {
+    transactions = await Transaction.find({
+      userId,
+      ...getScopeFilter(scope),
+    })
+      .sort({ transactionDate: -1 })
+      .limit(5)
+      .lean();
+  }
 
   return transactions.map((t) => ({
     id: t._id.toString(),
@@ -80,5 +187,9 @@ export async function getRecentTransactions(
     transactionDate: t.transactionDate,
     category: getCategoryName(t.category),
     transactionType: getTransactionType(t.transactionType, t.category),
+    canManage: String(t.userId ?? "") === userId,
+    historyLabel: t.accountScope === "family" ? "Family" : "Personal",
+    memberEmail: "",
+    memberName: "",
   }));
 }

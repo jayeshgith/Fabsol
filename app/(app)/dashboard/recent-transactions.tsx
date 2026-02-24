@@ -13,7 +13,7 @@ import { getRecentTransactions } from "@/data/getRecentTransactions";
 import { format } from "date-fns";
 import Link from "next/link";
 import numeral from "numeral";
-import TransactionRowActions from "./transaction-row-actions";
+import TransactionRowActionsClient from "./transaction-row-actions.client";
 
 const RecentTransactions = async ({
   scope = "personal",
@@ -60,9 +60,11 @@ const RecentTransactions = async ({
             <TableHeader>
               <TableRow>
                 <TableHead>Date</TableHead>
+                {scope === "family" ? <TableHead>Member</TableHead> : null}
                 <TableHead>Description</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Category</TableHead>
+                {scope === "family" ? <TableHead>History</TableHead> : null}
                 <TableHead>Amount</TableHead>
                 {showRowActions ? (
                   <TableHead className="text-right">Actions</TableHead>
@@ -80,6 +82,16 @@ const RecentTransactions = async ({
                         )
                       : "-"}
                   </TableCell>
+                  {scope === "family" ? (
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span>{transaction.memberName || "Member"}</span>
+                        <span className="text-xs text-slate-500">
+                          {transaction.memberEmail || "-"}
+                        </span>
+                      </div>
+                    </TableCell>
+                  ) : null}
                   <TableCell>{transaction.description || "-"}</TableCell>
                   <TableCell className="capitalize">
                     <Badge
@@ -93,12 +105,23 @@ const RecentTransactions = async ({
                     </Badge>
                   </TableCell>
                   <TableCell>{transaction.category}</TableCell>
+                  {scope === "family" ? (
+                    <TableCell>
+                      <Badge variant="default">
+                        {transaction.historyLabel || "Family"}
+                      </Badge>
+                    </TableCell>
+                  ) : null}
                   <TableCell>
                     INR {numeral(transaction.amount).format("0,0[.]00")}
                   </TableCell>
                   {showRowActions ? (
                     <TableCell className="text-right">
-                      <TransactionRowActions transactionId={transaction.id} />
+                      {transaction.canManage ? (
+                        <TransactionRowActionsClient
+                          transactionId={transaction.id}
+                        />
+                      ) : null}
                     </TableCell>
                   ) : null}
                 </TableRow>

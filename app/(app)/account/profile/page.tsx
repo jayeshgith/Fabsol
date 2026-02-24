@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { UploadButton } from "@/lib/uploadthing";
 import {
-  isValidInternationalPhoneNumber,
+  isValidTenDigitPhoneNumber,
   normalizePhoneNumber,
 } from "@/lib/profile";
 
@@ -62,8 +62,8 @@ export default function ProfilePage() {
     }
 
     const normalizedPhone = normalizePhoneNumber(form.phone);
-    if (!isValidInternationalPhoneNumber(normalizedPhone)) {
-      setMsg("Use a valid phone format like +917099482122.");
+    if (!isValidTenDigitPhoneNumber(normalizedPhone)) {
+      setMsg("Phone number must contain exactly 10 digits.");
       return;
     }
 
@@ -160,11 +160,13 @@ export default function ProfilePage() {
               id="phone"
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              placeholder="+917099482122"
+              placeholder="Enter 10-digit phone number"
+              inputMode="numeric"
+              maxLength={10}
               className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/10"
             />
             <p className="text-xs text-slate-500">
-              Include country code, example: +91XXXXXXXXXX
+              Enter exactly 10 digits (no country code).
             </p>
           </div>
 

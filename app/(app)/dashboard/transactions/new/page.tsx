@@ -13,8 +13,10 @@ import NewTransactionForm from "./new-transaction-form";
 
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
+import { Category } from "@/models/Category";
 import { Group } from "@/models/Group";
 import { User } from "@/models/User";
+import type { Category as CategoryType } from "@/types/Category";
 // import dynamic from "next/dynamic";
 
 // const NewTransactionForm = dynamic(() => import("./new-transaction-form"), {
@@ -46,6 +48,36 @@ const NewTransactionPage = async () => {
     name: String(group.name ?? "Unnamed Family"),
   }));
 
+  const categoriesRaw = await Category.find()
+    .select("_id name type scope")
+    .sort({ name: 1 })
+    .lean();
+
+  const categories: CategoryType[] = categoriesRaw.flatMap((category) => {
+    if (category.type !== "income" && category.type !== "expense") {
+      return [];
+    }
+
+    const name = String(category.name ?? "").trim();
+    if (!name) {
+      return [];
+    }
+
+    return [
+      {
+        _id: String(category._id),
+        name,
+        type: category.type,
+        scope:
+          category.scope === "personal" ||
+          category.scope === "family" ||
+          category.scope === "social"
+            ? category.scope
+            : undefined,
+      },
+    ];
+  });
+
   return (
     <div className="max-w-7xl mx-auto py-10">
       <Breadcrumb>
@@ -70,7 +102,10 @@ const NewTransactionPage = async () => {
 
       <Card className="mt-8 p-6 max-w-3xl">
         <CardContent className="pt-6">
-          <NewTransactionForm familyGroups={familyGroups} />
+          <NewTransactionForm
+            familyGroups={familyGroups}
+            categories={categories}
+          />
         </CardContent>
       </Card>
     </div>

@@ -1,8 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAnnualCashflow } from "@/data/getAnnualCashflow";
-import CashFlowFilters from "./cashflow-filters";
 import { getTransactionYearsRange } from "@/data/getTransactionYearsRange";
-import CashFlowContent from "./cashflow-content";
+import CashFlowFiltersClient from "./cashflow-filters.client";
+import CashFlowContentClient from "./cashflow-content.client";
 
 const CashFlow = async ({
   year,
@@ -25,11 +25,13 @@ const CashFlow = async ({
       <CardHeader>
         <CardTitle className="flex justify-between">
           <span>{title}</span>
-          {showFilters ? <CashFlowFilters year={year} yearsRange={yearsRange} /> : null}
+          {showFilters ? (
+            <CashFlowFiltersClient year={year} yearsRange={yearsRange} />
+          ) : null}
         </CardTitle>
       </CardHeader>
       <CardContent className="grid grid-cols-[1fr_250px]">
-        <CashFlowContent annualCashflow={cashflow} />
+        <CashFlowContentClient annualCashflow={cashflow} />
       </CardContent>
     </Card>
   );

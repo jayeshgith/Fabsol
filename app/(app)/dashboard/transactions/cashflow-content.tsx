@@ -7,7 +7,6 @@ import {
 } from "@/components/ui/chart";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { Divide } from "lucide-react";
 import numeral from "numeral";
 import { Bar, BarChart, CartesianGrid, Legend, XAxis, YAxis } from "recharts";
 
@@ -45,19 +44,20 @@ const CashFlowContent = ({
             color: "#f97316",
           },
         }}
-        className="w-full h-[300px]">
+        className="w-full h-[300px]"
+      >
         <BarChart data={annualCashflow}>
           <CartesianGrid vertical={false} />
           <YAxis
             tickFormatter={(value) => {
-              return `₹ ${numeral(value).format("0,0")}`;
+              return `INR ${numeral(value).format("0,0")}`;
             }}
           />
           <XAxis
             tickFormatter={(value) => {
               return format(
                 new Date(today.getFullYear(), value as number, 1),
-                "MMM"
+                "MMM",
               );
             }}
           />
@@ -70,7 +70,7 @@ const CashFlowContent = ({
                     <div>
                       {format(
                         new Date(today.getFullYear(), month - 1, 1),
-                        "MMMM"
+                        "MMMM",
                       )}
                     </div>
                   );
@@ -90,44 +90,45 @@ const CashFlowContent = ({
           <Bar
             dataKey="totalIncome"
             radius={4}
+            minPointSize={(value) =>
+              typeof value === "number" && value > 0 ? 3 : 0
+            }
             fill="var(--color-totalIncome)"
           />
           <Bar
             dataKey="totalExpenses"
             radius={4}
+            minPointSize={(value) =>
+              typeof value === "number" && value > 0 ? 3 : 0
+            }
             fill="var(--color-totalExpenses)"
           />
         </BarChart>
       </ChartContainer>
       <div className="border-l px-4 flex flex-col gap-4 justify-center">
         <div>
-          <span className="text-muted-foreground font-bold text-sm">
-            Income
-          </span>
+          <span className="text-muted-foreground font-bold text-sm">Income</span>
           <h2 className="text-3xl font-semibold">
-            ₹ {numeral(totalAnnualIncome).format("0,0[.]00")}
+            INR {numeral(totalAnnualIncome).format("0,0[.]00")}
           </h2>
         </div>
         <div className="border-t" />
         <div>
-          <span className="text-muted-foreground font-bold text-sm">
-            Expenses
-          </span>
+          <span className="text-muted-foreground font-bold text-sm">Expenses</span>
           <h2 className="text-3xl font-semibold">
-            ₹ {numeral(totalAnnualExpenses).format("0,0[.]00")}
+            INR {numeral(totalAnnualExpenses).format("0,0[.]00")}
           </h2>
         </div>
         <div className="border-t" />
         <div>
-          <span className="text-muted-foreground font-bold text-sm">
-            Balance
-          </span>
+          <span className="text-muted-foreground font-bold text-sm">Balance</span>
           <h2
             className={cn(
               "text-3xl font-semibold",
-              balance < 0 ? "text-red-600" : "text-green-600"
-            )}>
-            ₹ {numeral(balance).format("0,0[.]00")}
+              balance < 0 ? "text-red-600" : "text-green-600",
+            )}
+          >
+            INR {numeral(balance).format("0,0[.]00")}
           </h2>
         </div>
       </div>

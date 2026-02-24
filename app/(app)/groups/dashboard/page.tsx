@@ -190,11 +190,24 @@ export default async function GroupDashboardPage({
                     return (
                       <TableRow key={member.id}>
                         <TableCell>
-                          <div className="flex flex-col">
-                            <span className="font-medium">{member.name}</span>
-                            <span className="text-xs text-slate-500">
-                              {member.email}
-                            </span>
+                          <div className="flex items-center gap-3">
+                            {member.image ? (
+                              <img
+                                src={member.image}
+                                alt={member.name || "Member"}
+                                className="h-9 w-9 rounded-full object-cover border border-slate-200"
+                              />
+                            ) : (
+                              <div className="h-9 w-9 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-semibold border border-slate-300">
+                                {member.name?.trim()?.charAt(0)?.toUpperCase() || "M"}
+                              </div>
+                            )}
+                            <div className="flex flex-col">
+                              <span className="font-medium">{member.name}</span>
+                              <span className="text-xs text-slate-500">
+                                {member.email}
+                              </span>
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>{member.phone || "-"}</TableCell>

@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
 import {
   isProfileComplete,
-  isValidInternationalPhoneNumber,
+  isValidTenDigitPhoneNumber,
   normalizePhoneNumber,
 } from "@/lib/profile";
 import { User } from "@/models/User";
@@ -50,8 +50,8 @@ export async function PATCH(req: Request) {
       image,
     })
   ) {
-    const phoneError = !isValidInternationalPhoneNumber(phone)
-      ? "Phone number must be in international format, for example +917099482122."
+    const phoneError = !isValidTenDigitPhoneNumber(phone)
+      ? "Phone number must contain exactly 10 digits."
       : "Name, email, phone number, and profile image are required.";
 
     return NextResponse.json(

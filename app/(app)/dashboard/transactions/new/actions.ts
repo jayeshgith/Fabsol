@@ -7,6 +7,7 @@ import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { Group } from "@/models/Group";
 import { User } from "@/models/User";
+import { Category } from "@/models/Category";
 
 export const createTransactionAction = async (data: unknown) => {
   try {
@@ -52,6 +53,23 @@ export const createTransactionAction = async (data: unknown) => {
         memberGroups[0];
       groupId = String(selectedGroup._id);
     }
+
+    await Category.findOneAndUpdate(
+      {
+        name: parsed.category,
+        type: parsed.transactionType,
+        scope: parsed.accountScope,
+      },
+      {
+        $setOnInsert: {
+          name: parsed.category,
+          type: parsed.transactionType,
+          scope: parsed.accountScope,
+          isSystem: false,
+        },
+      },
+      { upsert: true },
+    );
 
     const transaction = await Transaction.create({
       userId,

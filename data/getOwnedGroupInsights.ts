@@ -21,6 +21,7 @@ type MemberSummary = {
   name: string;
   email: string;
   phone: string;
+  image: string;
   totalIncome: number;
   totalExpenses: number;
 };
@@ -131,7 +132,7 @@ export async function getOwnedGroupInsights(params: {
   await connectDB();
 
   const owner = await User.findOne({ email: session.user.email })
-    .select("_id name email")
+    .select("_id name email image")
     .lean();
 
   if (!owner?._id || !owner.email) return null;
@@ -189,13 +190,14 @@ export async function getOwnedGroupInsights(params: {
     : [];
 
   const members = await User.find({ _id: { $in: memberIds } })
-    .select("_id name email phone")
+    .select("_id name email phone image")
     .lean();
 
   const memberEmailMap = new Map<string, string>();
   const memberNameMap = new Map<string, string>();
   const memberIdMap = new Map<string, string>();
   const memberPhoneMap = new Map<string, string>();
+  const memberImageMap = new Map<string, string>();
 
   members.forEach((member) => {
     const email = String(member.email ?? "");
@@ -205,6 +207,7 @@ export async function getOwnedGroupInsights(params: {
     memberNameMap.set(email, String(member.name ?? member.email ?? "Member"));
     memberIdMap.set(email, memberId);
     memberPhoneMap.set(email, String(member.phone ?? ""));
+    memberImageMap.set(email, String(member.image ?? ""));
   });
 
   const groupEmails = members
@@ -215,6 +218,7 @@ export async function getOwnedGroupInsights(params: {
     groupEmails.push(owner.email);
     memberNameMap.set(owner.email, ownerName);
     memberIdMap.set(owner.email, ownerId);
+    memberImageMap.set(owner.email, String(owner.image ?? ""));
   }
 
   const currentYear = new Date().getFullYear();
@@ -397,6 +401,7 @@ export async function getOwnedGroupInsights(params: {
       name: memberNameMap.get(email) ?? email,
       email,
       phone: memberPhoneMap.get(email) ?? "",
+      image: memberImageMap.get(email) ?? "",
       totalIncome: Number(income),
       totalExpenses: Number(expenses),
     };

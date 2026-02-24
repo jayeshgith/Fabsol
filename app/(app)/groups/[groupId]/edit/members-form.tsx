@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, UserPlus, Users, X } from "lucide-react";
@@ -54,43 +54,53 @@ export default function EditGroupMembersForm({
     [members],
   );
 
+  const searchUsers = useCallback(
+    async (rawValue: string) => {
+      const trimmedQuery = rawValue.trim();
+      setMessage("");
+      setSearching(true);
+
+      try {
+        const response = await fetch(
+          `/api/users/search?query=${encodeURIComponent(trimmedQuery)}&groupId=${encodeURIComponent(groupId)}`,
+          { cache: "no-store" },
+        );
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          setMessage(data?.error ?? "Unable to search users right now.");
+          setResults([]);
+          setSearching(false);
+          return;
+        }
+
+        const foundUsers = Array.isArray(data?.users) ? data.users : [];
+        setResults(foundUsers);
+        if (foundUsers.length === 0) {
+          setMessage(
+            trimmedQuery
+              ? "No available users found for this name or phone number."
+              : "No available users found right now.",
+          );
+        }
+      } catch {
+        setResults([]);
+        setMessage("Something went wrong while searching users.");
+      } finally {
+        setSearching(false);
+      }
+    },
+    [groupId],
+  );
+
+  useEffect(() => {
+    void searchUsers("");
+  }, [searchUsers]);
+
   async function onSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage("");
-
-    const trimmedQuery = query.trim();
-
-    setSearching(true);
-
-    try {
-      const response = await fetch(
-        `/api/users/search?query=${encodeURIComponent(trimmedQuery)}&groupId=${encodeURIComponent(groupId)}`,
-        { cache: "no-store" },
-      );
-
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        setMessage(data?.error ?? "Unable to search users right now.");
-        setResults([]);
-        setSearching(false);
-        return;
-      }
-
-      const foundUsers = Array.isArray(data?.users) ? data.users : [];
-      setResults(foundUsers);
-      if (foundUsers.length === 0) {
-        setMessage(
-          trimmedQuery
-            ? "No available users found for this name or phone number."
-            : "No available users found right now.",
-        );
-      }
-    } catch {
-      setResults([]);
-      setMessage("Something went wrong while searching users.");
-    } finally {
-      setSearching(false);
-    }
+    await searchUsers(query);
   }
 
   function addMember(user: SearchUser) {
@@ -176,7 +186,7 @@ export default function EditGroupMembersForm({
             </div>
           </form>
           <p className="mt-2 text-xs text-slate-500">
-            Leave empty and click search to view all available members.
+            Available users are loaded automatically. Use search to filter.
           </p>
         </div>
 
@@ -213,7 +223,7 @@ export default function EditGroupMembersForm({
 
           {results.length === 0 && !searching ? (
             <div className="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-500">
-              Search results will appear here.
+              No available users to add right now.
             </div>
           ) : null}
         </div>
