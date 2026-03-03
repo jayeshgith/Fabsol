@@ -1,11 +1,3 @@
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -18,81 +10,115 @@ import {
 } from "@/components/ui/table";
 import { getTransactionsByMonth } from "@/data/getTransactionsByMonth";
 import { format } from "date-fns";
-import { PencilIcon } from "lucide-react";
 import Link from "next/link";
 import z from "zod";
 import numeral from "numeral";
 import { Badge } from "@/components/ui/badge";
 import Filters from "./filters";
 import { getTransactionYearsRange } from "@/data/getTransactionYearsRange";
+import TransactionRowActionsClient from "../transaction-row-actions.client";
+import TransactionBackButton from "./transaction-back-button";
 
 const today = new Date();
 const searchSchema = z.object({
-  year: z.coerce
-    .number()
-    .min(today.getFullYear() - 100)
-    .max(today.getFullYear() + 1)
-    .catch(today.getFullYear()),
-  month: z.coerce
-    .number()
-    .min(1)
-    .max(12)
-    .catch(today.getMonth() + 1),
+  year: z.preprocess(
+    (value) => {
+      if (value === undefined || value === null || value === "") return undefined;
+      return Number(value);
+    },
+    z
+      .number()
+      .int()
+      .min(today.getFullYear() - 100)
+      .max(today.getFullYear() + 1)
+      .optional(),
+  ),
+  month: z.preprocess(
+    (value) => {
+      if (value === undefined || value === null || value === "") return undefined;
+      return Number(value);
+    },
+    z.number().int().min(1).max(12).optional(),
+  ),
+  scope: z.enum(["personal", "family"]).catch("personal"),
 });
+
 const TransactionsPage = async ({
   searchParams,
 }: {
   searchParams: Promise<{
     month?: string;
     year?: string;
+    scope?: string;
   }>;
 }) => {
   const searchParamsData = await searchParams;
-  const { month, year } = searchSchema.parse(searchParamsData);
-  const selectedDate = new Date(year, month - 1, 1);
+  const { month, year, scope } = searchSchema.parse(searchParamsData);
+  const isFamilyScope = scope === "family";
+  const isAllHistory = typeof month !== "number" && typeof year !== "number";
+  const isYearOnly = typeof year === "number" && typeof month !== "number";
+  const selectedDate =
+    typeof month === "number" && typeof year === "number"
+      ? new Date(year, month - 1, 1)
+      : null;
 
-  const transactions = await getTransactionsByMonth({ year, month });
-  const yearsRange = await getTransactionYearsRange();
+  const transactions = await getTransactionsByMonth({ year, month, scope });
+  const yearsRange = await getTransactionYearsRange({
+    scope: isFamilyScope ? "family" : "personal",
+  });
 
   return (
     <div className="max-w-7xl mx-auto py-10">
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link href="/dashboard">Dashboard</Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>Transactions</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-      <Card className="mt-8 p-6">
+      <TransactionBackButton fallbackHref="/dashboard" />
+
+      <Card className="mt-6 p-6">
         <CardHeader>
-          <CardTitle className="flex justify-between items-center">
-            <span>{format(selectedDate, "MMM yyyy")} Transactions</span>
-            <Filters year={year} month={month} yearsRange={yearsRange} />
+          <CardTitle className="flex items-center justify-between">
+            <span>
+              {selectedDate ? format(selectedDate, "MMM yyyy") : null}
+              {selectedDate ? " " : null}
+              {isYearOnly ? `${year}` : null}
+              {isYearOnly ? " " : null}
+              {isAllHistory ? "All " : ""}
+              {isFamilyScope ? "Family Transactions" : "Personal Transactions"}
+            </span>
+            <Filters
+              year={year}
+              month={month}
+              yearsRange={yearsRange}
+              scope={scope}
+            />
           </CardTitle>
         </CardHeader>
         <CardContent>
           <Button asChild>
-            <Link href="/dashboard/transactions/new">New Transaction</Link>
+            <Link
+              href={
+                isFamilyScope
+                  ? "/dashboard/transactions/new?scope=family"
+                  : "/dashboard/transactions/new"
+              }
+            >
+              New Transaction
+            </Link>
           </Button>
+
           {transactions?.length === 0 && (
-            <p className="text-center py-10 text-lg text-muted-foreground">
-              No transactions found for this month.
+            <p className="py-10 text-center text-lg text-muted-foreground">
+              No transactions found.
             </p>
           )}
+
           {!!transactions?.length && (
             <Table className="mt-4">
               <TableHeader>
                 <TableRow>
                   <TableHead>Date</TableHead>
+                  {isFamilyScope ? <TableHead>Member</TableHead> : null}
                   <TableHead>Description</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Category</TableHead>
+                  {isFamilyScope ? <TableHead>Family</TableHead> : null}
                   <TableHead>Amount</TableHead>
                   <TableHead />
                 </TableRow>
@@ -102,12 +128,19 @@ const TransactionsPage = async ({
                   <TableRow key={transaction.id}>
                     <TableCell>
                       {transaction.transactionDate
-                        ? format(
-                            new Date(transaction.transactionDate),
-                            "do MMM yyyy"
-                          )
+                        ? format(new Date(transaction.transactionDate), "do MMM yyyy")
                         : "-"}
                     </TableCell>
+                    {isFamilyScope ? (
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span>{transaction.memberName || "Member"}</span>
+                          <span className="text-xs text-slate-500">
+                            {transaction.memberEmail || "-"}
+                          </span>
+                        </div>
+                      </TableCell>
+                    ) : null}
                     <TableCell>{transaction.description || "-"}</TableCell>
                     <TableCell className="capitalize">
                       <Badge
@@ -115,25 +148,28 @@ const TransactionsPage = async ({
                           transaction.transactionType === "income"
                             ? "bg-green-500"
                             : "bg-red-500"
-                        }>
+                        }
+                      >
                         {transaction.transactionType}
                       </Badge>
                     </TableCell>
                     <TableCell>{transaction.category}</TableCell>
+                    {isFamilyScope ? (
+                      <TableCell>
+                        <Badge variant="default">
+                          {transaction.historyLabel || "Family"}
+                        </Badge>
+                      </TableCell>
+                    ) : null}
                     <TableCell>
-                      {"₹" + numeral(transaction.amount).format("0,0[.]00")}
+                      INR {numeral(transaction.amount).format("0,0[.]00")}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="outline"
-                        asChild
-                        size="icon"
-                        aria-label="Edit Transaction">
-                        <Link
-                          href={`/dashboard/transactions/${transaction.id}`}>
-                          <PencilIcon className="h-4 w-4" />
-                        </Link>
-                      </Button>
+                      {transaction.canManage ? (
+                        <TransactionRowActionsClient
+                          transactionId={transaction.id}
+                        />
+                      ) : null}
                     </TableCell>
                   </TableRow>
                 ))}

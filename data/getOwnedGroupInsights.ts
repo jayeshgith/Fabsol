@@ -125,6 +125,7 @@ export async function getOwnedGroupInsights(params: {
   recentMonth?: number;
   recentYear?: number;
   recentDate?: string;
+  recentRange?: "all";
 }): Promise<GroupInsightsResult | null> {
   const session = await auth();
   if (!session?.user?.email) return null;
@@ -330,10 +331,32 @@ export async function getOwnedGroupInsights(params: {
 
     const yearFilter = Number(params.recentYear);
     const hasValidYear = Number.isInteger(yearFilter) && yearFilter > 1900;
-    if (!hasValidYear) return undefined;
-
     const monthFilter = Number(params.recentMonth);
     const hasValidMonth = Number.isInteger(monthFilter) && monthFilter >= 1 && monthFilter <= 12;
+
+    if (!hasValidYear) {
+      if (hasValidMonth) {
+        return undefined;
+      }
+
+      if (params.recentRange === "all") {
+        return undefined;
+      }
+
+      // Default mode: show only the last 3 days on group dashboard.
+      const today = new Date();
+      const end = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate() + 1,
+      );
+      const start = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate() - 2,
+      );
+      return { $gte: start, $lt: end };
+    }
 
     if (hasValidMonth) {
       return {

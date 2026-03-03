@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 export default async function AccountPage() {
   const session = await auth();
@@ -20,6 +21,19 @@ export default async function AccountPage() {
         <p className="mt-2 text-gray-600 text-sm">
          Login another Google Account or change your current account password.
         </p>
+      </div>
+
+      <div className="mt-6 rounded-xl border p-4">
+        <h2 className="text-xl font-semibold">Billing</h2>
+        <p className="mt-2 text-sm text-gray-600">
+          Manage your Base or Pro plan and checkout with Stripe test mode.
+        </p>
+        <Link
+          href="/pricing"
+          className="mt-4 inline-flex rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+        >
+          Open Pricing
+        </Link>
       </div>
     </div>
   );

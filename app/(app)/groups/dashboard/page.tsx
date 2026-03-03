@@ -18,6 +18,7 @@ import CashflowChart from "./cashflow-chart";
 import GroupFilters from "./filters";
 import GroupManagement from "./group-management";
 import RecentTransactionsFilters from "./recent-transactions-filters";
+import TransactionRowActionsClient from "../../dashboard/transaction-row-actions.client";
 
 export default async function GroupDashboardPage({
   searchParams,
@@ -29,6 +30,7 @@ export default async function GroupDashboardPage({
     txMonth?: string;
     txYear?: string;
     txDate?: string;
+    txRange?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -49,6 +51,7 @@ export default async function GroupDashboardPage({
     typeof params.txDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(params.txDate)
       ? params.txDate
       : undefined;
+  const txRange = params.txRange === "all" ? "all" : undefined;
 
   const data = await getOwnedGroupInsights({
     year,
@@ -57,6 +60,7 @@ export default async function GroupDashboardPage({
     recentMonth: txMonth,
     recentYear: txYear,
     recentDate: txDate,
+    recentRange: txRange,
   });
 
   if (!data) {
@@ -261,6 +265,7 @@ export default async function GroupDashboardPage({
                       <TableHead>History</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead>Amount</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -305,6 +310,13 @@ export default async function GroupDashboardPage({
                         </TableCell>
                         <TableCell>
                           INR {numeral(tx.amount).format("0,0[.]00")}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {tx.accountScope === "family" ? (
+                            <TransactionRowActionsClient transactionId={tx.id} />
+                          ) : (
+                            <span className="text-xs text-slate-400">-</span>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}

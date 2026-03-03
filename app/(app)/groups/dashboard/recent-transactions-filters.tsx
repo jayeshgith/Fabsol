@@ -54,29 +54,40 @@ export default function RecentTransactionsFilters({
 
   function onApply() {
     const params = new URLSearchParams(searchParams.toString());
+    const isScopeAll = selectedScope === "all";
+    const isMonthAll = selectedMonth === "all";
+    const isYearAll = selectedYear === "all";
+    const hasDate = selectedDate.trim().length > 0;
+    const isAllHistoryRequest = isScopeAll && isMonthAll && isYearAll && !hasDate;
 
-    if (selectedScope === "all") {
+    if (isScopeAll) {
       params.delete("txScope");
     } else {
       params.set("txScope", selectedScope);
     }
 
-    if (selectedMonth === "all") {
+    if (isMonthAll) {
       params.delete("txMonth");
     } else {
       params.set("txMonth", selectedMonth);
     }
 
-    if (selectedYear === "all") {
+    if (isYearAll) {
       params.delete("txYear");
     } else {
       params.set("txYear", selectedYear);
     }
 
-    if (selectedDate.trim()) {
+    if (hasDate) {
       params.set("txDate", selectedDate.trim());
     } else {
       params.delete("txDate");
+    }
+
+    if (isAllHistoryRequest) {
+      params.set("txRange", "all");
+    } else {
+      params.delete("txRange");
     }
 
     router.push(`/groups/dashboard?${params.toString()}`);
@@ -88,6 +99,7 @@ export default function RecentTransactionsFilters({
     params.delete("txMonth");
     params.delete("txYear");
     params.delete("txDate");
+    params.delete("txRange");
 
     setSelectedScope("all");
     setSelectedMonth("all");

@@ -16,9 +16,11 @@ type FamilyGroup = {
 const NewTransactionForm = ({
   familyGroups,
   categories,
+  defaultAccountScope = "personal",
 }: {
   familyGroups: FamilyGroup[];
   categories: Category[];
+  defaultAccountScope?: "personal" | "family";
 }) => {
   const router = useRouter();
 
@@ -36,11 +38,13 @@ const NewTransactionForm = ({
     if (result.success) {
       toast.success("Transaction created successfully.", { duration: 4000 });
 
+      const month = new Date().getMonth() + 1;
+      const year = new Date().getFullYear();
+      const scopeParam =
+        data.accountScope === "family" ? "&scope=family" : "";
+
       router.push(
-        "/dashboard/transactions?month=" +
-          (new Date().getMonth() + 1) +
-          "&year=" +
-          new Date().getFullYear(),
+        `/dashboard/transactions?month=${month}&year=${year}${scopeParam}`,
       );
     } else {
       toast.error("Failed to create transaction.", {
@@ -56,6 +60,10 @@ const NewTransactionForm = ({
       categories={categories}
       onsubmit={handleSubmit}
       showDynamicTitle
+      defaultValues={{
+        accountScope: defaultAccountScope,
+        groupId: defaultAccountScope === "family" ? familyGroups[0]?.id ?? "" : "",
+      }}
     />
   );
 };

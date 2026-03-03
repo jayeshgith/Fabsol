@@ -1,13 +1,4 @@
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 import { Card, CardContent } from "@/components/ui/card";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import NewTransactionForm from "./new-transaction-form";
 
@@ -17,14 +8,16 @@ import { Category } from "@/models/Category";
 import { Group } from "@/models/Group";
 import { User } from "@/models/User";
 import type { Category as CategoryType } from "@/types/Category";
-// import dynamic from "next/dynamic";
+import TransactionBackButton from "../transaction-back-button";
 
-// const NewTransactionForm = dynamic(() => import("./new-transaction-form"), {
-//   ssr: false,
-// });
+const NewTransactionPage = async ({
+  searchParams,
+}: {
+  searchParams: Promise<{ scope?: string }>;
+}) => {
+  const params = await searchParams;
+  const requestedScope = params.scope === "family" ? "family" : "personal";
 
-
-const NewTransactionPage = async () => {
   const session = await auth();
   if (!session?.user?.email) {
     redirect("/login");
@@ -47,6 +40,13 @@ const NewTransactionPage = async () => {
     id: String(group._id),
     name: String(group.name ?? "Unnamed Family"),
   }));
+
+  const defaultAccountScope =
+    requestedScope === "family" && familyGroups.length > 0 ? "family" : "personal";
+  const transactionsHref =
+    requestedScope === "family"
+      ? "/dashboard/transactions?scope=family"
+      : "/dashboard/transactions";
 
   const categoriesRaw = await Category.find()
     .select("_id name type scope")
@@ -80,31 +80,14 @@ const NewTransactionPage = async () => {
 
   return (
     <div className="max-w-7xl mx-auto py-10">
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link href="/dashboard">Dashboard</Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link href="/dashboard/transactions">Transactions</Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>New Transaction</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
+      <TransactionBackButton fallbackHref={transactionsHref} />
 
-      <Card className="mt-8 p-6 max-w-3xl">
+      <Card className="mt-6 p-6 max-w-3xl">
         <CardContent className="pt-6">
           <NewTransactionForm
             familyGroups={familyGroups}
             categories={categories}
+            defaultAccountScope={defaultAccountScope}
           />
         </CardContent>
       </Card>

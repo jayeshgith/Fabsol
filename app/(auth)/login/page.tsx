@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import AuthBreadcrumbs from "@/components/auth-breadcrumbs";
 
 function LoginContent() {
   const router = useRouter();
@@ -65,6 +66,9 @@ function LoginContent() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-[#0b1220] via-[#16203b] to-[#2f1f2f] px-4 py-6 sm:px-6">
+      <div className="absolute left-4 top-4 z-20 sm:left-6 sm:top-6">
+        <AuthBreadcrumbs />
+      </div>
       <div className="absolute top-20 -left-32 h-64 w-64 rounded-full bg-emerald-400/20 blur-3xl animate-pulse" />
       <div className="absolute bottom-32 -right-32 h-72 w-72 rounded-full bg-orange-400/20 blur-3xl animate-pulse delay-1000" />
       <div className="absolute top-1/2 left-1/3 h-80 w-80 rounded-full bg-sky-400/15 blur-3xl animate-pulse delay-500" />

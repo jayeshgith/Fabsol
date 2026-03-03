@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, UserPlus, Users, X } from "lucide-react";
@@ -26,9 +26,6 @@ export default function CreateGroupForm() {
   const [groupName, setGroupName] = useState("");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchUser[]>([]);
-  const [resultsVisible, setResultsVisible] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
-  const [lastSearchedQuery, setLastSearchedQuery] = useState("");
   const [selectedMembers, setSelectedMembers] = useState<SearchUser[]>([]);
   const [searching, setSearching] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -39,26 +36,14 @@ export default function CreateGroupForm() {
     [selectedMembers],
   );
 
-  async function onSearch(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function loadMembers(searchQuery: string) {
     setMessage("");
 
-    const trimmedQuery = query.trim();
-    const isToggleHide =
-      resultsVisible && hasSearched && trimmedQuery === lastSearchedQuery;
-
-    if (isToggleHide) {
-      setResultsVisible(false);
-      return;
-    }
-
     setSearching(true);
-    setHasSearched(true);
-    setResultsVisible(true);
 
     try {
       const res = await fetch(
-        `/api/users/search?query=${encodeURIComponent(trimmedQuery)}`,
+        `/api/users/search?query=${encodeURIComponent(searchQuery)}`,
         { cache: "no-store" },
       );
 
@@ -73,10 +58,9 @@ export default function CreateGroupForm() {
 
       const foundUsers = Array.isArray(data?.users) ? data.users : [];
       setResults(foundUsers);
-      setLastSearchedQuery(trimmedQuery);
       if (foundUsers.length === 0) {
         setMessage(
-          trimmedQuery
+          searchQuery
             ? "No users found for this name or phone number."
             : "No available users found right now.",
         );
@@ -90,6 +74,15 @@ export default function CreateGroupForm() {
       setSearching(false);
     }
   }
+
+  async function onSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await loadMembers(query.trim());
+  }
+
+  useEffect(() => {
+    void loadMembers("");
+  }, []);
 
   function addMember(user: SearchUser) {
     if (selectedMemberIdSet.has(user.id)) return;
@@ -190,58 +183,44 @@ export default function CreateGroupForm() {
             </div>
           </form>
           <p className="mt-2 text-xs text-slate-500">
-            Leave empty and click search to view all available members.
+            Available members are shown by default. Use search to filter.
           </p>
         </div>
 
         <div className="space-y-3">
-          {resultsVisible
-            ? results.map((user) => {
-                const isAdded = selectedMemberIdSet.has(user.id);
+          {results.map((user) => {
+            const isAdded = selectedMemberIdSet.has(user.id);
 
-                return (
-                  <div
-                    key={user.id}
-                    className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-slate-900">
-                        {user.name || "User"}
-                      </p>
-                      <p className="truncate text-xs text-slate-600">
-                        {user.phone}
-                      </p>
-                      <p className="truncate text-xs text-slate-500">
-                        {user.email}
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={isAdded ? "secondary" : "default"}
-                      disabled={isAdded}
-                      onClick={() => addMember(user)}
-                      className="gap-1.5"
-                    >
-                      <UserPlus className="h-4 w-4" />
-                      {isAdded ? "Added" : "Add Member"}
-                    </Button>
-                  </div>
-                );
-              })
-            : null}
+            return (
+              <div
+                key={user.id}
+                className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-slate-900">
+                    {user.name || "User"}
+                  </p>
+                  <p className="truncate text-xs text-slate-600">{user.phone}</p>
+                  <p className="truncate text-xs text-slate-500">{user.email}</p>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={isAdded ? "secondary" : "default"}
+                  disabled={isAdded}
+                  onClick={() => addMember(user)}
+                  className="gap-1.5"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  {isAdded ? "Added" : "Add Member"}
+                </Button>
+              </div>
+            );
+          })}
 
-          {resultsVisible && results.length === 0 && !searching ? (
+          {results.length === 0 && !searching ? (
             <div className="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-500">
-              {hasSearched
-                ? "No users found for this search."
-                : "Search results will appear here."}
-            </div>
-          ) : null}
-
-          {!resultsVisible && !searching ? (
-            <div className="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-500">
-              Search results are hidden. Click search to show members.
+              No users found.
             </div>
           ) : null}
         </div>

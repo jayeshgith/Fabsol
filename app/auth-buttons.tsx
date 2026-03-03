@@ -165,7 +165,7 @@ export default function AuthButtons({
   const image = session.user.image;
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative z-50">
       <button
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-3 rounded-xl bg-white/10 px-3 py-2 hover:bg-white/20"
@@ -194,7 +194,7 @@ export default function AuthButtons({
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-56 overflow-hidden rounded-xl border border-white/10 bg-[#0b0b0f] shadow-xl">
+        <div className="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-xl border border-white/10 bg-[#0b0b0f] shadow-xl">
           <Link
             href="/account"
             onClick={() => setOpen(false)}

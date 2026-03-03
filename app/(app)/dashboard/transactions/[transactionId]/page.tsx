@@ -10,6 +10,42 @@ import { Group } from "@/models/Group";
 import { Transaction } from "@/models/Transaction";
 import { User } from "@/models/User";
 
+async function canManageAsGroupOwner(params: {
+  actorId: string;
+  groupId: string;
+  transactionUserEmail: string;
+}) {
+  const group = await Group.findOne({
+    _id: params.groupId,
+    ownerId: params.actorId,
+  })
+    .select("ownerId memberIds")
+    .lean();
+
+  if (!group) return false;
+
+  const allowedUserIds = [
+    String(group.ownerId ?? "").trim(),
+    ...(Array.isArray(group.memberIds)
+      ? group.memberIds.map((id: unknown) => String(id).trim())
+      : []),
+  ].filter(Boolean);
+
+  if (allowedUserIds.length === 0) return false;
+
+  const allowedUsers = await User.find({ _id: { $in: allowedUserIds } })
+    .select("email")
+    .lean();
+
+  const allowedEmails = new Set(
+    allowedUsers
+      .map((user) => String(user.email ?? "").trim())
+      .filter(Boolean),
+  );
+
+  return allowedEmails.has(params.transactionUserEmail);
+}
+
 const EditTransactionPage = async ({
   params,
 }: {
@@ -20,24 +56,40 @@ const EditTransactionPage = async ({
 
   if (!transactionId) return notFound();
   const session = await auth();
-  if (!session?.user?.email) return notFound();
+  const actorEmail = String(session?.user?.email ?? "").trim();
+  if (!actorEmail) return notFound();
 
   await connectDB();
 
-  const tx = await Transaction.findOne({
-    _id: transactionId,
-    userId: session.user.email,
-  })
-    .lean();
-
-  if (!tx) return notFound();
-
-  const currentUser = await User.findOne({ email: session.user.email })
+  const currentUser = await User.findOne({ email: actorEmail })
     .select("_id")
     .lean();
+  if (!currentUser?._id) return notFound();
+
+  const tx = await Transaction.findById(transactionId).lean();
+  if (!tx) return notFound();
+
+  const transactionUserEmail = String(tx.userId ?? "").trim();
+  const isSelfTransaction = transactionUserEmail === actorEmail;
+  const canManageByGroupOwnership =
+    !isSelfTransaction &&
+    tx.accountScope === "family" &&
+    Boolean(tx.groupId) &&
+    (await canManageAsGroupOwner({
+      actorId: String(currentUser._id),
+      groupId: String(tx.groupId),
+      transactionUserEmail,
+    }));
+
+  if (!isSelfTransaction && !canManageByGroupOwnership) return notFound();
 
   const familyGroupsRaw = currentUser?._id
-    ? await Group.find({ memberIds: String(currentUser._id) })
+    ? await Group.find({
+        $or: [
+          { memberIds: String(currentUser._id) },
+          { ownerId: String(currentUser._id) },
+        ],
+      })
         .select("_id name")
         .sort({ name: 1 })
         .lean()

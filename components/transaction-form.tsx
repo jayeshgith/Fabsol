@@ -42,15 +42,7 @@ type Props = {
   categories?: CategoryOption[];
   onsubmit: (data: z.input<typeof transactionFormSchema>) => Promise<void>;
   showDynamicTitle?: boolean;
-  defaultValues?: {
-    accountScope: "personal" | "family";
-    transactionType: "income" | "expense";
-    groupId: string;
-    amount: number;
-    category: string;
-    description: string;
-    transactionDate: Date;
-  };
+  defaultValues?: Partial<z.input<typeof transactionFormSchema>>;
 };
 
 const TransactionForm = ({

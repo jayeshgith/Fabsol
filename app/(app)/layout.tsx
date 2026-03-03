@@ -2,6 +2,7 @@ import Link from "next/link";
 import { LandmarkIcon } from "lucide-react";
 import AuthButtons from "../auth-buttons";
 import NotificationListener from "./notification-listener";
+import AppBreadcrumbs from "@/components/app-breadcrumbs";
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
 import { getGroupAccessByEmail } from "@/lib/group-access";
@@ -45,6 +46,18 @@ export default async function AppLayout({
         </Link>
 
         <div className="flex items-center gap-3">
+          <Link
+            href="/"
+            className="rounded-lg border border-white/25 px-3 py-2 text-sm font-semibold hover:bg-white/10"
+          >
+            Home
+          </Link>
+          <Link
+            href="/pricing"
+            className="rounded-lg border border-white/25 px-3 py-2 text-sm font-semibold hover:bg-white/10"
+          >
+            Pricing
+          </Link>
           {canCreateGroup ? (
             <Link
               href="/groups/new"
@@ -57,6 +70,7 @@ export default async function AppLayout({
         </div>
       </nav>
 
+      <AppBreadcrumbs />
       <NotificationListener />
       {children}
     </>

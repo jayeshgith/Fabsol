@@ -1,7 +1,9 @@
 import "server-only";
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
+import { Group } from "@/models/Group";
 import { Transaction } from "@/models/Transaction";
+import { User } from "@/models/User";
 
 function getCategoryName(category: unknown): string {
   if (typeof category === "string" && category.trim()) {
@@ -39,9 +41,11 @@ function getTransactionType(
 export async function getTransactionsByMonth({
   year,
   month,
+  scope = "personal",
 }: {
-  year: number;
-  month: number;
+  year?: number;
+  month?: number;
+  scope?: "personal" | "family";
 }) {
  
   const session = await auth();
@@ -54,12 +58,125 @@ export async function getTransactionsByMonth({
 
   await connectDB();
 
-  const start = new Date(year, month - 1, 1);
-  const end = new Date(year, month, 1); // next month start
+  const hasYearFilter = Number.isInteger(year);
+  const hasMonthFilter = Number.isInteger(month);
+
+  let dateFilter: Record<string, unknown> = {};
+  if (hasYearFilter && hasMonthFilter) {
+    const start = new Date(year as number, (month as number) - 1, 1);
+    const end = new Date(year as number, month as number, 1);
+    dateFilter = { transactionDate: { $gte: start, $lt: end } };
+  } else if (hasYearFilter) {
+    const start = new Date(year as number, 0, 1);
+    const end = new Date((year as number) + 1, 0, 1);
+    dateFilter = { transactionDate: { $gte: start, $lt: end } };
+  } else if (hasMonthFilter) {
+    dateFilter = {
+      $expr: {
+        $eq: [{ $month: "$transactionDate" }, month as number],
+      },
+    };
+  }
+
+  if (scope === "family") {
+    const currentUser = await User.findOne({ email: userId }).select("_id").lean();
+    if (!currentUser?._id) return [];
+
+    const memberGroups = await Group.find({
+      memberIds: String(currentUser._id),
+    })
+      .select("_id name ownerId memberIds")
+      .lean();
+
+    if (memberGroups.length === 0) return [];
+
+    const memberUserIds = [
+      ...new Set(
+        memberGroups.flatMap((group) => {
+          const owner = String(group.ownerId ?? "").trim();
+          const members = Array.isArray(group.memberIds)
+            ? group.memberIds.map((id: unknown) => String(id).trim())
+            : [];
+
+          return [owner, ...members].filter(Boolean);
+        }),
+      ),
+    ];
+
+    const groupUsers = memberUserIds.length
+      ? await User.find({ _id: { $in: memberUserIds } })
+          .select("_id email name")
+          .lean()
+      : [];
+
+    const userById = new Map(groupUsers.map((member) => [String(member._id), member]));
+    const groupNameById = new Map(
+      memberGroups.map((group) => [String(group._id), String(group.name ?? "Family")]),
+    );
+
+    const familyClauses = memberGroups
+      .map((group) => {
+        const ids = [
+          String(group.ownerId ?? "").trim(),
+          ...(Array.isArray(group.memberIds)
+            ? group.memberIds.map((id: unknown) => String(id).trim())
+            : []),
+        ].filter(Boolean);
+
+        const emails = ids
+          .map((id) => String(userById.get(id)?.email ?? "").trim())
+          .filter(Boolean);
+
+        if (emails.length === 0) return null;
+
+        return {
+          groupId: String(group._id),
+          userId: { $in: emails },
+        };
+      })
+      .filter((clause): clause is { groupId: string; userId: { $in: string[] } } =>
+        Boolean(clause),
+      );
+
+    if (familyClauses.length === 0) return [];
+
+    const memberNameByEmail = new Map(
+      groupUsers.map((member) => [
+        String(member.email ?? ""),
+        String(member.name ?? member.email ?? "Member"),
+      ]),
+    );
+
+    const transactions = await Transaction.find({
+      accountScope: "family",
+      $or: familyClauses,
+      ...dateFilter,
+    })
+      .sort({ transactionDate: -1 })
+      .lean();
+
+    return transactions.map((t) => ({
+      id: t._id.toString(),
+      description: t.description,
+      amount: t.amount,
+      transactionDate: t.transactionDate,
+      category: getCategoryName(t.category),
+      transactionType: getTransactionType(t.transactionType, t.category),
+      canManage: String(t.userId ?? "") === userId,
+      historyLabel:
+        groupNameById.get(String(t.groupId ?? "")) ??
+        (t.accountScope === "family" ? "Family" : "Personal"),
+      memberEmail: String(t.userId ?? ""),
+      memberName:
+        memberNameByEmail.get(String(t.userId ?? "")) ??
+        String(t.userId ?? "Member"),
+    }));
+  }
 
   const transactions = await Transaction.find({
     userId,
-    transactionDate: { $gte: start, $lt: end },
+    $or: [{ accountScope: "personal" }, { accountScope: { $exists: false } }],
+    ...dateFilter,
   })
     .sort({ transactionDate: -1 })
     .lean();
@@ -71,5 +188,9 @@ export async function getTransactionsByMonth({
     transactionDate: t.transactionDate,
     category: getCategoryName(t.category),
     transactionType: getTransactionType(t.transactionType, t.category),
+    canManage: true,
+    historyLabel: t.accountScope === "family" ? "Family" : "Personal",
+    memberEmail: "",
+    memberName: "",
   }));
 }

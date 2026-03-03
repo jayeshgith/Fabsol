@@ -20,11 +20,15 @@ const RecentTransactions = async ({
   title = "Recent Transactions",
   showActions = true,
   showRowActions = false,
+  viewAllHref = "/dashboard/transactions",
+  createHref = "/dashboard/transactions/new",
 }: {
   scope?: "personal" | "family";
   title?: string;
   showActions?: boolean;
   showRowActions?: boolean;
+  viewAllHref?: string;
+  createHref?: string;
 }) => {
   const recentTransactions = await getRecentTransactions({ scope });
   const emptyMessage =
@@ -40,10 +44,10 @@ const RecentTransactions = async ({
           {showActions ? (
             <div className="flex gap-2">
               <Button variant="outline" asChild>
-                <Link href="/dashboard/transactions">View All</Link>
+                <Link href={viewAllHref}>View All</Link>
               </Button>
               <Button asChild>
-                <Link href="/dashboard/transactions/new">Create New</Link>
+                <Link href={createHref}>Create New</Link>
               </Button>
             </div>
           ) : null}

@@ -16,37 +16,60 @@ const Filters = ({
   year,
   month,
   yearsRange,
+  scope = "personal",
 }: {
-  year: number;
-  month: number;
+  year?: number;
+  month?: number;
   yearsRange: number[];
+  scope?: "personal" | "family";
 }) => {
-  const [selectedMonth, setSelectedMonth] = useState(month);
-  const [selectedYear, setSelectedYear] = useState(year);
+  const [selectedMonth, setSelectedMonth] = useState(
+    month ? month.toString() : "all",
+  );
+  const [selectedYear, setSelectedYear] = useState(
+    year ? year.toString() : "all",
+  );
+
+  const queryParams = new URLSearchParams();
+  if (selectedMonth !== "all") {
+    queryParams.set("month", selectedMonth);
+  }
+  if (selectedYear !== "all") {
+    queryParams.set("year", selectedYear);
+  }
+  if (scope === "family") {
+    queryParams.set("scope", "family");
+  }
+
+  const href = queryParams.toString()
+    ? `/dashboard/transactions?${queryParams.toString()}`
+    : "/dashboard/transactions";
 
   return (
     <div className="flex gap-1">
       <Select
-        value={selectedMonth.toString()}
-        onValueChange={(newValue) => setSelectedMonth(Number(newValue))}>
+        value={selectedMonth}
+        onValueChange={(newValue) => setSelectedMonth(newValue)}>
         <SelectTrigger>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
+          <SelectItem value="all">All Months</SelectItem>
           {Array.from({ length: 12 }, (_, i) => (
             <SelectItem key={i} value={`${i + 1}`}>
-              {format(new Date(selectedYear, i, 1), "MMMM")}
+              {format(new Date(2025, i, 1), "MMMM")}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
       <Select
-        value={selectedYear.toString()}
-        onValueChange={(newValue) => setSelectedYear(Number(newValue))}>
+        value={selectedYear}
+        onValueChange={(newValue) => setSelectedYear(newValue)}>
         <SelectTrigger>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
+          <SelectItem value="all">All Years</SelectItem>
           {yearsRange.map((year) => (
             <SelectItem key={year} value={`${year}`}>
               {year}
@@ -55,10 +78,7 @@ const Filters = ({
         </SelectContent>
       </Select>
       <Button asChild>
-        <Link
-          href={`/dashboard/transactions?month=${selectedMonth}&year=${selectedYear}`}>
-          Go
-        </Link>
+        <Link href={href}>Go</Link>
       </Button>
     </div>
   );
