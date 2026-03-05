@@ -5,6 +5,7 @@ import { Group } from "@/models/Group";
 import { Notification } from "@/models/Notification";
 import { Transaction } from "@/models/Transaction";
 import { User } from "@/models/User";
+import { getSocietyAccountScopeFilter } from "@/lib/account-scope";
 
 export async function PATCH(
   req: Request,
@@ -31,7 +32,7 @@ export async function PATCH(
   const group = await Group.findOne({ _id: groupId, ownerId }).lean();
   if (!group) {
     return NextResponse.json(
-      { error: "Group not found or access denied." },
+      { error: "Society not found or access denied." },
       { status: 404 },
     );
   }
@@ -63,7 +64,7 @@ export async function PATCH(
     return NextResponse.json(
       {
         error:
-          "One or more selected users already belong to another group. They cannot join multiple groups.",
+          "One or more selected users already belong to another society. They cannot join multiple societies.",
       },
       { status: 409 },
     );
@@ -96,7 +97,7 @@ export async function PATCH(
 
     if (removedEmails.length > 0) {
       await Transaction.deleteMany({
-        accountScope: "family",
+        ...getSocietyAccountScopeFilter(),
         groupId: String(groupId),
         userId: { $in: removedEmails },
       });
@@ -110,13 +111,13 @@ export async function PATCH(
       session.user.email ||
       "A user";
 
-    const groupName = String(group.name ?? "Family Group");
+    const groupName = String(group.name ?? "Society");
 
     await Notification.insertMany(
       newlyAddedMemberIds.map((memberId) => ({
         userId: memberId,
-        title: "Added to Family Group",
-        message: `${creatorName} added you to "${groupName}" group.`,
+        title: "Added to Society",
+        message: `${creatorName} added you to "${groupName}" society.`,
         type: "group_invite",
         groupId: String(groupId),
         isRead: false,

@@ -37,10 +37,7 @@ export default async function GroupDashboardPage({
   const parsedYear = Number(params.year);
   const year = Number.isFinite(parsedYear) ? parsedYear : new Date().getFullYear();
   const parsedTxMonth = Number(params.txMonth);
-  const txScope =
-    params.txScope === "family" || params.txScope === "personal"
-      ? params.txScope
-      : "all";
+  const txScope = params.txScope === "family" ? "family" : "all";
   const txMonth =
     Number.isInteger(parsedTxMonth) && parsedTxMonth >= 1 && parsedTxMonth <= 12
       ? parsedTxMonth
@@ -84,9 +81,9 @@ export default async function GroupDashboardPage({
     <div className="mx-auto max-w-7xl space-y-6 py-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Group Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Society Dashboard</h1>
           <p className="mt-1 text-sm text-slate-600">
-            Family transactions overview for family heads/admins.
+            Society transactions overview for society heads/admins.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -99,15 +96,15 @@ export default async function GroupDashboardPage({
       {data.groups.length === 0 ? (
         <Card>
           <CardHeader>
-            <CardTitle>No Family Yet</CardTitle>
+            <CardTitle>No Society Yet</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-slate-600">
-              You have not created a family yet. Create a family to start
-              tracking family member transactions together.
+              You have not created a society yet. Create a society to start
+              tracking society member transactions together.
             </p>
             <Button asChild>
-              <Link href="/groups/new">Create Family</Link>
+              <Link href="/groups/new">Create Society</Link>
             </Button>
           </CardContent>
         </Card>
@@ -116,7 +113,7 @@ export default async function GroupDashboardPage({
           <div className="rounded-2xl border bg-white p-4 shadow-sm">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-sm text-slate-500">Selected Group</p>
+                <p className="text-sm text-slate-500">Selected Society</p>
                 <h2 className="text-xl font-semibold">{data.selectedGroupName}</h2>
               </div>
               <GroupFilters
@@ -134,7 +131,7 @@ export default async function GroupDashboardPage({
 
           <Card>
             <CardHeader>
-              <CardTitle>User Family A/C ({data.year})</CardTitle>
+              <CardTitle>User Society A/C ({data.year})</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-3">
@@ -169,7 +166,7 @@ export default async function GroupDashboardPage({
           </Card>
 
           <CashflowChart
-            title={`Family Cashflow (${data.year})`}
+            title={`Society Cashflow (${data.year})`}
             annualCashflow={data.groupAnnualCashflow}
           />
 
@@ -239,7 +236,7 @@ export default async function GroupDashboardPage({
           <Card>
             <CardHeader>
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <CardTitle>Group Recent Transactions</CardTitle>
+                <CardTitle>Society Recent Transactions</CardTitle>
                 <RecentTransactionsFilters
                   yearsRange={data.yearsRange}
                   scope={txScope}
@@ -252,7 +249,7 @@ export default async function GroupDashboardPage({
             <CardContent>
               {data.groupRecentTransactions.length === 0 ? (
                 <p className="text-sm text-slate-600">
-                  No transactions found for this group.
+                  No transactions found for this society.
                 </p>
               ) : (
                 <Table>
@@ -294,7 +291,7 @@ export default async function GroupDashboardPage({
                                 : "secondary"
                             }
                           >
-                            {tx.accountScope}
+                            {tx.accountScope === "family" ? "Society" : "Personal"}
                           </Badge>
                         </TableCell>
                         <TableCell>

@@ -4,6 +4,11 @@ import { connectDB } from "@/lib/db";
 import { Group } from "@/models/Group";
 import { Transaction } from "@/models/Transaction";
 import { User } from "@/models/User";
+import {
+  getPersonalAccountScopeFilter,
+  getSocietyAccountScopeFilter,
+  toAccountScopeLabel,
+} from "@/lib/account-scope";
 
 function getCategoryName(category: unknown): string {
   if (typeof category === "string" && category.trim()) {
@@ -111,7 +116,7 @@ export async function getTransactionsByMonth({
 
     const userById = new Map(groupUsers.map((member) => [String(member._id), member]));
     const groupNameById = new Map(
-      memberGroups.map((group) => [String(group._id), String(group.name ?? "Family")]),
+      memberGroups.map((group) => [String(group._id), String(group.name ?? "Society")]),
     );
 
     const familyClauses = memberGroups
@@ -148,7 +153,7 @@ export async function getTransactionsByMonth({
     );
 
     const transactions = await Transaction.find({
-      accountScope: "family",
+      ...getSocietyAccountScopeFilter(),
       $or: familyClauses,
       ...dateFilter,
     })
@@ -165,7 +170,7 @@ export async function getTransactionsByMonth({
       canManage: String(t.userId ?? "") === userId,
       historyLabel:
         groupNameById.get(String(t.groupId ?? "")) ??
-        (t.accountScope === "family" ? "Family" : "Personal"),
+        toAccountScopeLabel(t.accountScope),
       memberEmail: String(t.userId ?? ""),
       memberName:
         memberNameByEmail.get(String(t.userId ?? "")) ??
@@ -175,7 +180,7 @@ export async function getTransactionsByMonth({
 
   const transactions = await Transaction.find({
     userId,
-    $or: [{ accountScope: "personal" }, { accountScope: { $exists: false } }],
+    ...getPersonalAccountScopeFilter(),
     ...dateFilter,
   })
     .sort({ transactionDate: -1 })
@@ -189,7 +194,7 @@ export async function getTransactionsByMonth({
     category: getCategoryName(t.category),
     transactionType: getTransactionType(t.transactionType, t.category),
     canManage: true,
-    historyLabel: t.accountScope === "family" ? "Family" : "Personal",
+    historyLabel: toAccountScopeLabel(t.accountScope),
     memberEmail: "",
     memberName: "",
   }));

@@ -16,7 +16,7 @@ const NewTransactionPage = async ({
   searchParams: Promise<{ scope?: string }>;
 }) => {
   const params = await searchParams;
-  const requestedScope = params.scope === "family" ? "family" : "personal";
+  const requestedScope = params.scope === "society" ? "family" : "personal";
 
   const session = await auth();
   if (!session?.user?.email) {
@@ -38,14 +38,14 @@ const NewTransactionPage = async ({
 
   const familyGroups = familyGroupsRaw.map((group) => ({
     id: String(group._id),
-    name: String(group.name ?? "Unnamed Family"),
+    name: String(group.name ?? "Unnamed Society"),
   }));
 
   const defaultAccountScope =
     requestedScope === "family" && familyGroups.length > 0 ? "family" : "personal";
   const transactionsHref =
     requestedScope === "family"
-      ? "/dashboard/transactions?scope=family"
+      ? "/dashboard/transactions?scope=society"
       : "/dashboard/transactions";
 
   const categoriesRaw = await Category.find()

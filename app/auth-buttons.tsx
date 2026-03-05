@@ -121,8 +121,10 @@ import { signOut, useSession } from "next-auth/react";
 
 export default function AuthButtons({
   showGroupDashboard = false,
+  showFamilyDashboard = false,
 }: {
   showGroupDashboard?: boolean;
+  showFamilyDashboard?: boolean;
 }) {
   const { data: session, status } = useSession();
   const [open, setOpen] = useState(false);
@@ -225,7 +227,16 @@ export default function AuthButtons({
               onClick={() => setOpen(false)}
               className="block px-4 py-3 text-sm hover:bg-white/10"
             >
-              Group Dashboard
+              Society Dashboard
+            </Link>
+          ) : null}
+          {showFamilyDashboard ? (
+            <Link
+              href="/family/dashboard"
+              onClick={() => setOpen(false)}
+              className="block px-4 py-3 text-sm hover:bg-white/10"
+            >
+              Family Dashboard
             </Link>
           ) : null}
 

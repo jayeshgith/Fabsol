@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
-import { getGroupAccessByEmail } from "@/lib/group-access";
-import { Group } from "@/models/Group";
-import { Notification } from "@/models/Notification";
+import { getFamilyAccessByEmail } from "@/lib/family-access";
+import { Family } from "@/models/Family";
 import { User } from "@/models/User";
 
 export async function POST(req: Request) {
@@ -12,18 +11,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const groupAccess = await getGroupAccessByEmail(session.user.email);
-  if (!groupAccess) {
+  const familyAccess = await getFamilyAccessByEmail(session.user.email);
+  if (!familyAccess) {
     return NextResponse.json({ error: "User not found." }, { status: 404 });
   }
 
-  if (!groupAccess.canCreateGroup) {
-    const errorMessage = groupAccess.hasOwnedGroups
-      ? "You already created a society. Delete that society before creating a new one."
-      : "You are already a member in another society, so you cannot create a society.";
-
+  if (!familyAccess.canCreateFamily) {
     return NextResponse.json(
-      { error: errorMessage },
+      {
+        error:
+          "You already belong to a family. Leave that family before creating a new one.",
+      },
       { status: 403 },
     );
   }
@@ -37,14 +35,14 @@ export async function POST(req: Request) {
 
   if (!name) {
     return NextResponse.json(
-      { error: "Society name is required." },
+      { error: "Family name is required." },
       { status: 400 },
     );
   }
 
   if (memberIds.length === 0) {
     return NextResponse.json(
-      { error: "Add at least one society member to create a society." },
+      { error: "Add at least one family member to create a family." },
       { status: 400 },
     );
   }
@@ -52,7 +50,7 @@ export async function POST(req: Request) {
   await connectDB();
 
   const owner = await User.findOne({ email: session.user.email })
-    .select("_id name email")
+    .select("_id")
     .lean();
 
   if (!owner?._id) {
@@ -78,56 +76,35 @@ export async function POST(req: Request) {
 
   const finalMemberIds = [...new Set([ownerId, ...validMemberIds])];
 
-  const conflictingGroup = await Group.findOne({
+  const conflictingFamily = await Family.findOne({
     memberIds: { $in: finalMemberIds },
   })
-    .select("_id name")
+    .select("_id")
     .lean();
 
-  if (conflictingGroup) {
+  if (conflictingFamily) {
     return NextResponse.json(
       {
         error:
-          "One or more selected users already belong to another society. They cannot join multiple societies.",
+          "One or more selected users already belong to another family. They cannot join multiple families.",
       },
       { status: 409 },
     );
   }
 
-  const createdGroup = await Group.create({
+  const createdFamily = await Family.create({
     name,
     ownerId,
     memberIds: finalMemberIds,
   });
 
-  const invitedMemberIds = validMemberIds.filter((memberId) => memberId !== ownerId);
-
-  if (invitedMemberIds.length > 0) {
-    const creatorName =
-      (typeof owner.name === "string" && owner.name.trim()) ||
-      session.user.name ||
-      session.user.email ||
-      "A user";
-
-    await Notification.insertMany(
-      invitedMemberIds.map((memberId) => ({
-        userId: memberId,
-        title: "Added to Society",
-        message: `${creatorName} added you to "${name}" society.`,
-        type: "group_invite",
-        groupId: String(createdGroup._id),
-        isRead: false,
-      })),
-    );
-  }
-
   return NextResponse.json({
     ok: true,
-    group: {
-      id: String(createdGroup._id),
-      name: createdGroup.name,
-      ownerId: createdGroup.ownerId,
-      memberIds: createdGroup.memberIds,
+    family: {
+      id: String(createdFamily._id),
+      name: createdFamily.name,
+      ownerId: createdFamily.ownerId,
+      memberIds: createdFamily.memberIds,
     },
   });
 }

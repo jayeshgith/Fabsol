@@ -40,7 +40,7 @@ const searchSchema = z.object({
     },
     z.number().int().min(1).max(12).optional(),
   ),
-  scope: z.enum(["personal", "family"]).catch("personal"),
+  scope: z.enum(["personal", "society"]).catch("personal"),
 });
 
 const TransactionsPage = async ({
@@ -54,7 +54,7 @@ const TransactionsPage = async ({
 }) => {
   const searchParamsData = await searchParams;
   const { month, year, scope } = searchSchema.parse(searchParamsData);
-  const isFamilyScope = scope === "family";
+  const isSocietyScope = scope === "society";
   const isAllHistory = typeof month !== "number" && typeof year !== "number";
   const isYearOnly = typeof year === "number" && typeof month !== "number";
   const selectedDate =
@@ -62,9 +62,13 @@ const TransactionsPage = async ({
       ? new Date(year, month - 1, 1)
       : null;
 
-  const transactions = await getTransactionsByMonth({ year, month, scope });
+  const transactions = await getTransactionsByMonth({
+    year,
+    month,
+    scope: isSocietyScope ? "family" : "personal",
+  });
   const yearsRange = await getTransactionYearsRange({
-    scope: isFamilyScope ? "family" : "personal",
+    scope: isSocietyScope ? "family" : "personal",
   });
 
   return (
@@ -80,7 +84,7 @@ const TransactionsPage = async ({
               {isYearOnly ? `${year}` : null}
               {isYearOnly ? " " : null}
               {isAllHistory ? "All " : ""}
-              {isFamilyScope ? "Family Transactions" : "Personal Transactions"}
+              {isSocietyScope ? "Society Transactions" : "Personal Transactions"}
             </span>
             <Filters
               year={year}
@@ -94,8 +98,8 @@ const TransactionsPage = async ({
           <Button asChild>
             <Link
               href={
-                isFamilyScope
-                  ? "/dashboard/transactions/new?scope=family"
+                isSocietyScope
+                  ? "/dashboard/transactions/new?scope=society"
                   : "/dashboard/transactions/new"
               }
             >
@@ -114,11 +118,11 @@ const TransactionsPage = async ({
               <TableHeader>
                 <TableRow>
                   <TableHead>Date</TableHead>
-                  {isFamilyScope ? <TableHead>Member</TableHead> : null}
+                  {isSocietyScope ? <TableHead>Member</TableHead> : null}
                   <TableHead>Description</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Category</TableHead>
-                  {isFamilyScope ? <TableHead>Family</TableHead> : null}
+                  {isSocietyScope ? <TableHead>Society</TableHead> : null}
                   <TableHead>Amount</TableHead>
                   <TableHead />
                 </TableRow>
@@ -131,7 +135,7 @@ const TransactionsPage = async ({
                         ? format(new Date(transaction.transactionDate), "do MMM yyyy")
                         : "-"}
                     </TableCell>
-                    {isFamilyScope ? (
+                    {isSocietyScope ? (
                       <TableCell>
                         <div className="flex flex-col">
                           <span>{transaction.memberName || "Member"}</span>
@@ -154,10 +158,10 @@ const TransactionsPage = async ({
                       </Badge>
                     </TableCell>
                     <TableCell>{transaction.category}</TableCell>
-                    {isFamilyScope ? (
+                    {isSocietyScope ? (
                       <TableCell>
                         <Badge variant="default">
-                          {transaction.historyLabel || "Family"}
+                          {transaction.historyLabel || "Society"}
                         </Badge>
                       </TableCell>
                     ) : null}

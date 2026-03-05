@@ -9,10 +9,16 @@ const TransactionRowActionsNoSSR = dynamic(
 
 type Props = {
   transactionId: string;
+  deleteFirst?: boolean;
 };
 
-const TransactionRowActionsClient = ({ transactionId }: Props) => {
-  return <TransactionRowActionsNoSSR transactionId={transactionId} />;
+const TransactionRowActionsClient = ({ transactionId, deleteFirst = false }: Props) => {
+  return (
+    <TransactionRowActionsNoSSR
+      transactionId={transactionId}
+      deleteFirst={deleteFirst}
+    />
+  );
 };
 
 export default TransactionRowActionsClient;

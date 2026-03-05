@@ -1,11 +1,11 @@
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
-import { Group } from "@/models/Group";
+import { Family } from "@/models/Family";
 import { User } from "@/models/User";
 import { redirect } from "next/navigation";
-import EditGroupMembersForm from "./members-form";
+import EditFamilyMembersForm from "./members-form";
 
-type GroupMember = {
+type FamilyMember = {
   id: string;
   name: string;
   email: string;
@@ -14,17 +14,17 @@ type GroupMember = {
   isOwner: boolean;
 };
 
-export default async function EditGroupPage({
+export default async function EditFamilyPage({
   params,
 }: {
-  params: Promise<{ groupId: string }>;
+  params: Promise<{ familyId: string }>;
 }) {
   const session = await auth();
   if (!session?.user?.email) {
     redirect("/login");
   }
 
-  const { groupId } = await params;
+  const { familyId } = await params;
   await connectDB();
 
   const owner = await User.findOne({ email: session.user.email })
@@ -37,13 +37,13 @@ export default async function EditGroupPage({
 
   const ownerId = String(owner._id);
 
-  const group = await Group.findOne({ _id: groupId, ownerId }).lean();
-  if (!group) {
-    redirect("/dashboard");
+  const family = await Family.findOne({ _id: familyId, ownerId }).lean();
+  if (!family) {
+    redirect("/family/dashboard");
   }
 
-  const memberIds = Array.isArray(group.memberIds)
-    ? group.memberIds.map((id: unknown) => String(id))
+  const memberIds = Array.isArray(family.memberIds)
+    ? family.memberIds.map((id: unknown) => String(id))
     : [];
 
   const users = await User.find({ _id: { $in: memberIds } })
@@ -51,8 +51,8 @@ export default async function EditGroupPage({
     .lean();
 
   const usersById = new Map(users.map((user) => [String(user._id), user]));
-  const orderedMembers: GroupMember[] = memberIds
-    .map((id) => {
+  const orderedMembers: FamilyMember[] = memberIds
+    .map((id: string) => {
       const user = usersById.get(id);
       if (!user) return null;
 
@@ -65,12 +65,14 @@ export default async function EditGroupPage({
         isOwner: id === ownerId,
       };
     })
-    .filter((member): member is GroupMember => Boolean(member));
+    .filter((member: FamilyMember | null): member is FamilyMember =>
+      Boolean(member),
+    );
 
   return (
-    <EditGroupMembersForm
-      groupId={groupId}
-      groupName={String(group.name ?? "Society")}
+    <EditFamilyMembersForm
+      familyId={familyId}
+      familyName={String(family.name ?? "Family")}
       initialMembers={orderedMembers}
     />
   );

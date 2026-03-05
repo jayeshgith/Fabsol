@@ -13,7 +13,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-type GroupMember = {
+type FamilyMember = {
   id: string;
   name: string;
   email: string;
@@ -30,21 +30,21 @@ type SearchUser = {
   image: string;
 };
 
-type EditGroupMembersFormProps = {
-  groupId: string;
-  groupName: string;
-  initialMembers: GroupMember[];
+type EditFamilyMembersFormProps = {
+  familyId: string;
+  familyName: string;
+  initialMembers: FamilyMember[];
 };
 
-export default function EditGroupMembersForm({
-  groupId,
-  groupName,
+export default function EditFamilyMembersForm({
+  familyId,
+  familyName,
   initialMembers,
-}: EditGroupMembersFormProps) {
+}: EditFamilyMembersFormProps) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchUser[]>([]);
-  const [members, setMembers] = useState<GroupMember[]>(initialMembers);
+  const [members, setMembers] = useState<FamilyMember[]>(initialMembers);
   const [searching, setSearching] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -62,7 +62,7 @@ export default function EditGroupMembersForm({
 
       try {
         const response = await fetch(
-          `/api/users/search?query=${encodeURIComponent(trimmedQuery)}&groupId=${encodeURIComponent(groupId)}`,
+          `/api/users/search-family?query=${encodeURIComponent(trimmedQuery)}&familyId=${encodeURIComponent(familyId)}`,
           { cache: "no-store" },
         );
 
@@ -90,7 +90,7 @@ export default function EditGroupMembersForm({
         setSearching(false);
       }
     },
-    [groupId],
+    [familyId],
   );
 
   useEffect(() => {
@@ -125,7 +125,7 @@ export default function EditGroupMembersForm({
     setSaving(true);
 
     try {
-      const response = await fetch(`/api/groups/${groupId}/members`, {
+      const response = await fetch(`/api/families/${familyId}/members`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -135,13 +135,13 @@ export default function EditGroupMembersForm({
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        setMessage(data?.error ?? "Unable to update society members.");
+        setMessage(data?.error ?? "Unable to update family members.");
         setSaving(false);
         return;
       }
 
-      toast.success("Society members updated successfully.");
-      router.push(`/groups/dashboard?groupId=${encodeURIComponent(groupId)}`);
+      toast.success("Family members updated successfully.");
+      router.push(`/family/dashboard`);
       router.refresh();
     } catch {
       setMessage("Something went wrong while updating members.");
@@ -155,13 +155,11 @@ export default function EditGroupMembersForm({
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Edit Members</h1>
           <p className="mt-1 text-sm text-slate-600">
-            Manage members for <span className="font-semibold">{groupName}</span>.
+            Manage members for <span className="font-semibold">{familyName}</span>.
           </p>
         </div>
         <Button variant="outline" asChild>
-          <Link href={`/groups/dashboard?groupId=${encodeURIComponent(groupId)}`}>
-            Back to Society Dashboard
-          </Link>
+          <Link href="/family/dashboard">Back to Family Dashboard</Link>
         </Button>
       </div>
 
@@ -239,7 +237,7 @@ export default function EditGroupMembersForm({
             <PopoverContent align="start" className="w-80">
               <div className="space-y-2">
                 <p className="text-sm font-semibold text-slate-900">
-                  Society Members
+                  Family Members
                 </p>
                 {members.map((member) => (
                   <div
@@ -256,7 +254,7 @@ export default function EditGroupMembersForm({
                     </div>
                     {member.isOwner ? (
                       <span className="rounded-full bg-blue-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-blue-700">
-                        Admin
+                        Owner
                       </span>
                     ) : (
                       <Button

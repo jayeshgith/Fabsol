@@ -18,31 +18,31 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-type GroupManagementProps = {
-  groupId: string;
-  groupName: string;
+type FamilyManagementProps = {
+  familyId: string;
+  familyName: string;
 };
 
-export default function GroupManagement({
-  groupId,
-  groupName,
-}: GroupManagementProps) {
+export default function FamilyManagement({
+  familyId,
+  familyName,
+}: FamilyManagementProps) {
   const router = useRouter();
-  const [name, setName] = useState(groupName);
+  const [name, setName] = useState(familyName);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   async function onRename() {
     const trimmedName = name.trim();
     if (!trimmedName) {
-      toast.error("Society name is required.");
+      toast.error("Family name is required.");
       return;
     }
 
     setSaving(true);
 
     try {
-      const response = await fetch(`/api/groups/${groupId}`, {
+      const response = await fetch(`/api/families/${familyId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: trimmedName }),
@@ -50,15 +50,15 @@ export default function GroupManagement({
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        toast.error(data?.error ?? "Unable to update society name.");
+        toast.error(data?.error ?? "Unable to update family name.");
         setSaving(false);
         return;
       }
 
-      toast.success("Society name updated.");
+      toast.success("Family name updated.");
       router.refresh();
     } catch {
-      toast.error("Something went wrong while updating society.");
+      toast.error("Something went wrong while updating family.");
     } finally {
       setSaving(false);
     }
@@ -68,34 +68,34 @@ export default function GroupManagement({
     setDeleting(true);
 
     try {
-      const response = await fetch(`/api/groups/${groupId}`, {
+      const response = await fetch(`/api/families/${familyId}`, {
         method: "DELETE",
       });
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        toast.error(data?.error ?? "Unable to delete society.");
+        toast.error(data?.error ?? "Unable to delete family.");
         setDeleting(false);
         return;
       }
 
-      toast.success("Society deleted successfully.");
+      toast.success("Family deleted successfully.");
       router.push("/dashboard");
       router.refresh();
     } catch {
-      toast.error("Something went wrong while deleting society.");
+      toast.error("Something went wrong while deleting family.");
       setDeleting(false);
     }
   }
 
   return (
     <div className="rounded-xl border bg-slate-50 p-3">
-      <p className="mb-2 text-sm font-semibold text-slate-700">Manage Society</p>
+      <p className="mb-2 text-sm font-semibold text-slate-700">Manage Family</p>
       <div className="flex flex-wrap items-center gap-2">
         <Input
           value={name}
           onChange={(event) => setName(event.target.value)}
-          placeholder="Society name"
+          placeholder="Family name"
           className="w-full max-w-xs bg-white"
         />
         <Button onClick={onRename} disabled={saving}>
@@ -103,21 +103,21 @@ export default function GroupManagement({
         </Button>
 
         <Button variant="outline" asChild>
-          <Link href={`/groups/${groupId}/edit`}>Edit Members</Link>
+          <Link href={`/family/${familyId}/edit`}>Edit Members</Link>
         </Button>
 
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button variant="destructive" disabled={deleting}>
-              Delete Society
+              Delete Family
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete This Society?</AlertDialogTitle>
+              <AlertDialogTitle>Delete This Family?</AlertDialogTitle>
               <AlertDialogDescription>
-                This will remove the society and free all members so they can join
-                another society.
+                This will remove the family and free all members so they can join
+                another family.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

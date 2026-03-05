@@ -134,14 +134,14 @@ const TransactionForm = ({
   const selectedFamilyName =
     familyGroups.find((group) => group.id === selectedGroupId)?.name ??
     familyGroups[0]?.name ??
-    "No family available";
+    "No society available";
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onsubmit)}>
         {showDynamicTitle ? (
           <h2 className="mb-6 text-3xl font-bold tracking-tight">
-            {accountScope === "family" ? "Family Transaction" : "New Transaction"}
+            {accountScope === "family" ? "Society Transaction" : "New Transaction"}
           </h2>
         ) : null}
         <fieldset
@@ -174,7 +174,7 @@ const TransactionForm = ({
                           value="family"
                           disabled={familyGroups.length === 0}
                         >
-                          Family
+                          Society
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -219,7 +219,7 @@ const TransactionForm = ({
               render={() => {
                 return (
                   <FormItem>
-                    <FormLabel>Family</FormLabel>
+                    <FormLabel>Society</FormLabel>
                     <FormControl>
                       <Input value={selectedFamilyName} disabled />
                     </FormControl>

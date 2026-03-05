@@ -2,6 +2,7 @@ import "server-only";
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
 import { Transaction } from "@/models/Transaction";
+import { toFormAccountScope } from "@/lib/account-scope";
 
 export async function getTransaction(transactionId: string) {
  
@@ -25,8 +26,7 @@ export async function getTransaction(transactionId: string) {
     amount: tx.amount,
     transactionDate: tx.transactionDate,
     transactionType: tx.transactionType,
-    accountScope:
-      tx.accountScope === "family" ? ("family" as const) : ("personal" as const),
+    accountScope: toFormAccountScope(tx.accountScope),
     groupId: tx.groupId ? String(tx.groupId) : "",
     category:
       typeof tx.category === "string" ? tx.category : String(tx.category ?? ""),

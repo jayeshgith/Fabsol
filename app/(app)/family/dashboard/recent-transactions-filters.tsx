@@ -12,12 +12,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type RecentTransactionsFiltersProps = {
+type Props = {
   yearsRange: number[];
+  type?: "all" | "income" | "expense";
   month?: number;
   year?: number;
   date?: string;
-  scope?: "all" | "family";
 };
 
 const monthOptions = [
@@ -35,17 +35,17 @@ const monthOptions = [
   { value: "12", label: "December" },
 ];
 
-export default function RecentTransactionsFilters({
+export default function FamilyRecentTransactionsFilters({
   yearsRange,
+  type,
   month,
   year,
   date,
-  scope,
-}: RecentTransactionsFiltersProps) {
+}: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [selectedScope, setSelectedScope] = useState(scope ?? "all");
+  const [selectedType, setSelectedType] = useState(type ?? "all");
   const [selectedMonth, setSelectedMonth] = useState(
     month ? String(month) : "all",
   );
@@ -54,16 +54,16 @@ export default function RecentTransactionsFilters({
 
   function onApply() {
     const params = new URLSearchParams(searchParams.toString());
-    const isScopeAll = selectedScope === "all";
+    const isTypeAll = selectedType === "all";
     const isMonthAll = selectedMonth === "all";
     const isYearAll = selectedYear === "all";
     const hasDate = selectedDate.trim().length > 0;
-    const isAllHistoryRequest = isScopeAll && isMonthAll && isYearAll && !hasDate;
+    const isAllHistoryRequest = isTypeAll && isMonthAll && isYearAll && !hasDate;
 
-    if (isScopeAll) {
-      params.delete("txScope");
+    if (isTypeAll) {
+      params.delete("txType");
     } else {
-      params.set("txScope", selectedScope);
+      params.set("txType", selectedType);
     }
 
     if (isMonthAll) {
@@ -90,33 +90,33 @@ export default function RecentTransactionsFilters({
       params.delete("txRange");
     }
 
-    router.push(`/groups/dashboard?${params.toString()}`);
+    router.push(`/family/dashboard?${params.toString()}`);
   }
 
   function onClear() {
     const params = new URLSearchParams(searchParams.toString());
-    params.delete("txScope");
+    params.delete("txType");
     params.delete("txMonth");
     params.delete("txYear");
     params.delete("txDate");
     params.delete("txRange");
 
-    setSelectedScope("all");
+    setSelectedType("all");
     setSelectedMonth("all");
     setSelectedYear("all");
     setSelectedDate("");
 
-    router.push(`/groups/dashboard?${params.toString()}`);
+    router.push(`/family/dashboard?${params.toString()}`);
   }
 
   return (
     <div className="flex flex-wrap items-end gap-2">
       <div className="w-[150px]">
-        <p className="mb-1 text-xs text-slate-500">Transacation Type</p>
+        <p className="mb-1 text-xs text-slate-500">Type</p>
         <Select
-          value={selectedScope}
+          value={selectedType}
           onValueChange={(value) =>
-            setSelectedScope(value === "family" ? "family" : "all")
+            setSelectedType(value as "all" | "income" | "expense")
           }
         >
           <SelectTrigger>
@@ -124,7 +124,8 @@ export default function RecentTransactionsFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All</SelectItem>
-            <SelectItem value="family">Society</SelectItem>
+            <SelectItem value="income">Income</SelectItem>
+            <SelectItem value="expense">Expense</SelectItem>
           </SelectContent>
         </Select>
       </div>

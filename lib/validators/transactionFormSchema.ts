@@ -27,7 +27,7 @@ export const transactionFormSchema = z.object({
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ["groupId"],
-      message: "No family found for this account.",
+      message: "No society found for this account.",
     });
   }
 });

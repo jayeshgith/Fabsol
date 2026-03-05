@@ -41,7 +41,7 @@ const NewTransactionForm = ({
       const month = new Date().getMonth() + 1;
       const year = new Date().getFullYear();
       const scopeParam =
-        data.accountScope === "family" ? "&scope=family" : "";
+        data.accountScope === "family" ? "&scope=society" : "";
 
       router.push(
         `/dashboard/transactions?month=${month}&year=${year}${scopeParam}`,

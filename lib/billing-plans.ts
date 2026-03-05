@@ -21,7 +21,7 @@ export const BILLING_PLANS: BillingPlan[] = [
     description: "Great for individuals and small households.",
     features: [
       "Personal dashboard",
-      "Family dashboard",
+      "Society dashboard",
       "Monthly spending insights",
     ],
     cta: "Choose Base",
@@ -37,7 +37,7 @@ export const BILLING_PLANS: BillingPlan[] = [
     features: [
       "Everything in Base",
       "Advanced cashflow analytics",
-      "Advanced group members transactions",
+      "Advanced society member transactions",
       "Early access to new features",
     ],
     cta: "Choose Pro",

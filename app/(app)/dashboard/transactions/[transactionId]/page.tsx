@@ -6,9 +6,11 @@ import { notFound } from "next/navigation";
 
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
+import { Family } from "@/models/Family";
 import { Group } from "@/models/Group";
 import { Transaction } from "@/models/Transaction";
 import { User } from "@/models/User";
+import { isSocietyAccountScope, toFormAccountScope } from "@/lib/account-scope";
 
 async function canManageAsGroupOwner(params: {
   actorId: string;
@@ -46,6 +48,25 @@ async function canManageAsGroupOwner(params: {
   return allowedEmails.has(params.transactionUserEmail);
 }
 
+async function canManageAsFamilyOwner(params: {
+  actorId: string;
+  transactionUserEmail: string;
+}) {
+  const member = await User.findOne({ email: params.transactionUserEmail })
+    .select("_id")
+    .lean();
+  if (!member?._id) return false;
+
+  const family = await Family.findOne({
+    ownerId: params.actorId,
+    memberIds: String(member._id),
+  })
+    .select("_id")
+    .lean();
+
+  return Boolean(family?._id);
+}
+
 const EditTransactionPage = async ({
   params,
 }: {
@@ -71,17 +92,27 @@ const EditTransactionPage = async ({
 
   const transactionUserEmail = String(tx.userId ?? "").trim();
   const isSelfTransaction = transactionUserEmail === actorEmail;
+  const isSocietyTransaction = isSocietyAccountScope(tx.accountScope);
   const canManageByGroupOwnership =
     !isSelfTransaction &&
-    tx.accountScope === "family" &&
+    isSocietyTransaction &&
     Boolean(tx.groupId) &&
     (await canManageAsGroupOwner({
       actorId: String(currentUser._id),
       groupId: String(tx.groupId),
       transactionUserEmail,
     }));
+  const canManageByFamilyOwnership =
+    !isSelfTransaction &&
+    !isSocietyTransaction &&
+    (await canManageAsFamilyOwner({
+      actorId: String(currentUser._id),
+      transactionUserEmail,
+    }));
 
-  if (!isSelfTransaction && !canManageByGroupOwnership) return notFound();
+  if (!isSelfTransaction && !canManageByGroupOwnership && !canManageByFamilyOwnership) {
+    return notFound();
+  }
 
   const familyGroupsRaw = currentUser?._id
     ? await Group.find({
@@ -97,7 +128,7 @@ const EditTransactionPage = async ({
 
   const familyGroups = familyGroupsRaw.map((group) => ({
     id: String(group._id),
-    name: String(group.name ?? "Unnamed Family"),
+    name: String(group.name ?? "Unnamed Society"),
   }));
 
   const transaction = {
@@ -105,8 +136,7 @@ const EditTransactionPage = async ({
     amount: tx.amount,
     description: tx.description,
     transactionDate: tx.transactionDate,
-    accountScope:
-      tx.accountScope === "family" ? ("family" as const) : ("personal" as const),
+    accountScope: toFormAccountScope(tx.accountScope),
     groupId: tx.groupId ? String(tx.groupId) : "",
     category:
       typeof tx.category === "string" && tx.category.trim()

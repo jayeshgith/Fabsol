@@ -15,7 +15,8 @@ import {
 
 const PATH_LABELS: Record<string, string> = {
   dashboard: "Dashboard",
-  groups: "Groups",
+  groups: "Society",
+  family: "Family",
   new: "New",
   edit: "Edit",
   account: "Account",
@@ -56,7 +57,9 @@ export default function AppBreadcrumbs() {
   if (
     pathname === "/dashboard" ||
     pathname.startsWith("/dashboard/transactions") ||
-    pathname === "/groups/dashboard"
+    pathname === "/groups/dashboard" ||
+    pathname === "/groups/new" ||
+    pathname === "/family/dashboard"
   ) {
     return null;
   }

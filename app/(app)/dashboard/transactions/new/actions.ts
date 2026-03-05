@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { Group } from "@/models/Group";
 import { User } from "@/models/User";
 import { Category } from "@/models/Category";
+import { toCanonicalStoredAccountScope } from "@/lib/account-scope";
 
 export const createTransactionAction = async (data: unknown) => {
   try {
@@ -24,8 +25,9 @@ export const createTransactionAction = async (data: unknown) => {
 
     await connectDB();
 
+    const storedAccountScope = toCanonicalStoredAccountScope(parsed.accountScope);
     let groupId: string | null = null;
-    if (parsed.accountScope === "family") {
+    if (storedAccountScope === "society") {
       const currentUser = await User.findOne({ email: session.user.email })
         .select("_id")
         .lean();
@@ -43,7 +45,7 @@ export const createTransactionAction = async (data: unknown) => {
       if (memberGroups.length === 0) {
         return {
           success: false,
-          message: "No family found for this account.",
+          message: "No society found for this account.",
         };
       }
 
@@ -73,7 +75,7 @@ export const createTransactionAction = async (data: unknown) => {
 
     const transaction = await Transaction.create({
       userId,
-      accountScope: parsed.accountScope,
+      accountScope: storedAccountScope,
       groupId,
       transactionType: parsed.transactionType,
       amount: parsed.amount,

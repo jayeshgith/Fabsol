@@ -19,8 +19,10 @@ import { deleteTransactionAction } from "./transactions/[transactionId]/actions"
 
 const TransactionRowActions = ({
   transactionId,
+  deleteFirst = false,
 }: {
   transactionId: string;
+  deleteFirst?: boolean;
 }) => {
   const router = useRouter();
 
@@ -38,37 +40,53 @@ const TransactionRowActions = ({
     router.refresh();
   };
 
+  const editButton = (
+    <Button variant="outline" asChild size="icon" aria-label="Edit Transaction">
+      <Link href={`/dashboard/transactions/${transactionId}`}>
+        <PencilIcon className="h-4 w-4" />
+      </Link>
+    </Button>
+  );
+
+  const deleteButton = (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button variant="destructive" size="icon" aria-label="Delete Transaction">
+          <Trash2Icon className="h-4 w-4" />
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            Are you sure you want to delete this transaction?
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <Button variant="destructive" onClick={handleDelete}>
+            Delete
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+
   return (
     <div className="flex justify-end gap-2">
-      <Button variant="outline" asChild size="icon" aria-label="Edit Transaction">
-        <Link href={`/dashboard/transactions/${transactionId}`}>
-          <PencilIcon className="h-4 w-4" />
-        </Link>
-      </Button>
-
-      <AlertDialog>
-        <AlertDialogTrigger asChild>
-          <Button variant="destructive" size="icon" aria-label="Delete Transaction">
-            <Trash2Icon className="h-4 w-4" />
-          </Button>
-        </AlertDialogTrigger>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              Are you sure you want to delete this transaction?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <Button variant="destructive" onClick={handleDelete}>
-              Delete
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {deleteFirst ? (
+        <>
+          {deleteButton}
+          {editButton}
+        </>
+      ) : (
+        <>
+          {editButton}
+          {deleteButton}
+        </>
+      )}
     </div>
   );
 };

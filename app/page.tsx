@@ -7,18 +7,26 @@ import {
 import { auth } from "@/auth";
 import AuthButtons from "./auth-buttons";
 import { connectDB } from "@/lib/db";
+import { getFamilyAccessByEmail } from "@/lib/family-access";
 import { getGroupAccessByEmail } from "@/lib/group-access";
 
 export default async function HomePage() {
   const session = await auth();
   let canCreateGroup = false;
   let hasOwnedGroups = false;
+  let canCreateFamily = false;
+  let hasOwnedFamily = false;
+  let hasFamilyMembership = false;
 
   if (session?.user?.email) {
     await connectDB();
     const groupAccess = await getGroupAccessByEmail(session.user.email);
+    const familyAccess = await getFamilyAccessByEmail(session.user.email);
     canCreateGroup = groupAccess?.canCreateGroup ?? false;
     hasOwnedGroups = groupAccess?.hasOwnedGroups ?? false;
+    canCreateFamily = familyAccess?.canCreateFamily ?? false;
+    hasOwnedFamily = familyAccess?.hasOwnedFamily ?? false;
+    hasFamilyMembership = familyAccess?.hasFamilyMembership ?? false;
   }
 
   return (
@@ -47,10 +55,21 @@ export default async function HomePage() {
               href="/groups/new"
               className="rounded-lg border border-white/25 px-3 py-2 text-sm font-semibold hover:bg-white/10"
             >
+              Create Society
+            </Link>
+          ) : null}
+          {canCreateFamily ? (
+            <Link
+              href="/groups/new?mode=family"
+              className="rounded-lg border border-white/25 px-3 py-2 text-sm font-semibold hover:bg-white/10"
+            >
               Create Family
             </Link>
           ) : null}
-          <AuthButtons showGroupDashboard={hasOwnedGroups} />
+          <AuthButtons
+            showGroupDashboard={hasOwnedGroups}
+            showFamilyDashboard={hasOwnedFamily}
+          />
         </div>
       </nav>
 
@@ -65,11 +84,11 @@ export default async function HomePage() {
               Smart Finance System
             </p>
             <h1 className="mt-6 text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl">
-              One place to manage personal and family money.
+              One place to manage personal and society money.
             </h1>
             <p className="mt-5 max-w-xl text-base text-slate-300 sm:text-lg">
               PinTrust helps you track income and expenses, monitor cashflow,
-              and coordinate spending with your family in a clear, secure
+              and coordinate spending with your society in a clear, secure
               workflow.
             </p>
 
@@ -87,7 +106,21 @@ export default async function HomePage() {
                     href={canCreateGroup ? "/groups/new" : "/groups/dashboard"}
                     className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold transition hover:bg-white/10"
                   >
-                    {canCreateGroup ? "Create Family" : "Family Dashboard"}
+                    {canCreateGroup ? "Create Society" : "Society Dashboard"}
+                  </Link>
+                  <Link
+                    href={
+                      canCreateFamily
+                        ? "/groups/new?mode=family"
+                        : hasOwnedFamily
+                          ? "/family/dashboard"
+                          : hasFamilyMembership
+                            ? "/dashboard?scope=family"
+                            : "/dashboard"
+                    }
+                    className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold transition hover:bg-white/10"
+                  >
+                    {canCreateFamily ? "Create Family" : "Family Dashboard"}
                   </Link>
                   <Link
                     href="/pricing"
@@ -126,7 +159,7 @@ export default async function HomePage() {
                 Expense Tracking
               </span>
               <span className="rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs text-slate-300">
-                Group Collaboration
+                Society Collaboration
               </span>
               <span className="rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs text-slate-300">
                 Real-time Insights

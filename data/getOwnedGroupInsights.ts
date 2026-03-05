@@ -4,6 +4,11 @@ import { connectDB } from "@/lib/db";
 import { Group } from "@/models/Group";
 import { Transaction } from "@/models/Transaction";
 import { User } from "@/models/User";
+import {
+  getPersonalAccountScopeFilter,
+  getSocietyAccountScopeFilter,
+  toFormAccountScope,
+} from "@/lib/account-scope";
 
 type GroupOption = {
   id: string;
@@ -121,7 +126,7 @@ function getTransactionType(
 export async function getOwnedGroupInsights(params: {
   year: number;
   groupId?: string;
-  recentScope?: "all" | "family" | "personal";
+  recentScope?: "all" | "family";
   recentMonth?: number;
   recentYear?: number;
   recentDate?: string;
@@ -156,7 +161,7 @@ export async function getOwnedGroupInsights(params: {
 
   const groups: GroupOption[] = ownedGroups.map((group) => ({
     id: String(group._id),
-    name: String(group.name ?? "Unnamed Group"),
+    name: String(group.name ?? "Unnamed Society"),
   }));
 
   if (groups.length === 0) {
@@ -184,7 +189,7 @@ export async function getOwnedGroupInsights(params: {
   const selectedGroup = requestedGroup ?? ownedGroups[0];
 
   const selectedGroupId = String(selectedGroup._id);
-  const selectedGroupName = String(selectedGroup.name ?? "Unnamed Group");
+  const selectedGroupName = String(selectedGroup.name ?? "Unnamed Society");
 
   const memberIds = Array.isArray(selectedGroup.memberIds)
     ? selectedGroup.memberIds.map((id: unknown) => String(id))
@@ -225,17 +230,9 @@ export async function getOwnedGroupInsights(params: {
   const currentYear = new Date().getFullYear();
 
   const earliestGroupTransaction = await Transaction.findOne({
-    $or: [
-      {
-        accountScope: "family",
-        groupId: selectedGroupId,
-        userId: { $in: groupEmails },
-      },
-      {
-        userId: { $in: groupEmails },
-        $or: [{ accountScope: "personal" }, { accountScope: { $exists: false } }],
-      },
-    ],
+    ...getSocietyAccountScopeFilter(),
+    groupId: selectedGroupId,
+    userId: { $in: groupEmails },
   })
     .sort({ transactionDate: 1 })
     .select("transactionDate")
@@ -258,7 +255,7 @@ export async function getOwnedGroupInsights(params: {
     {
       $match: {
         userId: owner.email,
-        $or: [{ accountScope: "personal" }, { accountScope: { $exists: false } }],
+        ...getPersonalAccountScopeFilter(),
         transactionDate: { $gte: start, $lt: end },
       },
     },
@@ -276,7 +273,7 @@ export async function getOwnedGroupInsights(params: {
   const groupAnnualRows = await Transaction.aggregate<AggregateRow>([
     {
       $match: {
-        accountScope: "family",
+        ...getSocietyAccountScopeFilter(),
         groupId: selectedGroupId,
         userId: { $in: groupEmails },
         transactionDate: { $gte: start, $lt: end },
@@ -296,7 +293,7 @@ export async function getOwnedGroupInsights(params: {
   const memberSummaryRows = await Transaction.aggregate<AggregateRow>([
     {
       $match: {
-        accountScope: "family",
+        ...getSocietyAccountScopeFilter(),
         groupId: selectedGroupId,
         userId: { $in: groupEmails },
         transactionDate: { $gte: start, $lt: end },
@@ -343,7 +340,7 @@ export async function getOwnedGroupInsights(params: {
         return undefined;
       }
 
-      // Default mode: show only the last 3 days on group dashboard.
+      // Default mode: show only the last 3 days on society dashboard.
       const today = new Date();
       const end = new Date(
         today.getFullYear(),
@@ -371,25 +368,15 @@ export async function getOwnedGroupInsights(params: {
     };
   })();
 
-  const recentScope = params.recentScope ?? "all";
   const familyRecentClause = {
-    accountScope: "family",
+    ...getSocietyAccountScopeFilter(),
     groupId: selectedGroupId,
     userId: { $in: groupEmails },
   };
-  const personalRecentClause = {
-    userId: { $in: groupEmails },
-    $or: [{ accountScope: "personal" }, { accountScope: { $exists: false } }],
-  };
 
-  const groupRecentFilter: Record<string, unknown> =
-    recentScope === "family"
-      ? familyRecentClause
-      : recentScope === "personal"
-        ? personalRecentClause
-        : {
-            $or: [familyRecentClause, personalRecentClause],
-          };
+  const groupRecentFilter: Record<string, unknown> = {
+    ...familyRecentClause,
+  };
 
   if (groupRecentDateFilter) {
     groupRecentFilter.transactionDate = groupRecentDateFilter;
@@ -402,7 +389,7 @@ export async function getOwnedGroupInsights(params: {
 
   const personalRecentRows = await Transaction.find({
     userId: owner.email,
-    $or: [{ accountScope: "personal" }, { accountScope: { $exists: false } }],
+    ...getPersonalAccountScopeFilter(),
   })
     .sort({ transactionDate: -1 })
     .limit(10)
@@ -438,8 +425,7 @@ export async function getOwnedGroupInsights(params: {
         id: String(transaction._id),
         memberName: memberNameMap.get(memberEmail) ?? memberEmail,
         memberEmail,
-        accountScope:
-          transaction.accountScope === "family" ? "family" : "personal",
+        accountScope: toFormAccountScope(transaction.accountScope),
         description: String(transaction.description ?? ""),
         amount: Number(transaction.amount ?? 0),
         transactionDate: transaction.transactionDate
@@ -460,8 +446,7 @@ export async function getOwnedGroupInsights(params: {
         id: String(transaction._id),
         memberName: ownerName,
         memberEmail: owner.email,
-        accountScope:
-          transaction.accountScope === "family" ? "family" : "personal",
+        accountScope: toFormAccountScope(transaction.accountScope),
         description: String(transaction.description ?? ""),
         amount: Number(transaction.amount ?? 0),
         transactionDate: transaction.transactionDate

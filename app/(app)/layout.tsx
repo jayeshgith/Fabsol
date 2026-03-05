@@ -5,6 +5,7 @@ import NotificationListener from "./notification-listener";
 import AppBreadcrumbs from "@/components/app-breadcrumbs";
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
+import { getFamilyAccessByEmail } from "@/lib/family-access";
 import { getGroupAccessByEmail } from "@/lib/group-access";
 import { isProfileComplete } from "@/lib/profile";
 import { User } from "@/models/User";
@@ -23,8 +24,11 @@ export default async function AppLayout({
   await connectDB();
   const user = await User.findOne({ email: session.user.email }).lean();
   const groupAccess = await getGroupAccessByEmail(session.user.email);
+  const familyAccess = await getFamilyAccessByEmail(session.user.email);
   const hasOwnedGroups = groupAccess?.hasOwnedGroups ?? false;
   const canCreateGroup = groupAccess?.canCreateGroup ?? false;
+  const hasOwnedFamily = familyAccess?.hasOwnedFamily ?? false;
+  const canCreateFamily = familyAccess?.canCreateFamily ?? false;
 
   if (
     !isProfileComplete({
@@ -63,10 +67,21 @@ export default async function AppLayout({
               href="/groups/new"
               className="rounded-lg border border-white/25 px-3 py-2 text-sm font-semibold hover:bg-white/10"
             >
+              Create Society
+            </Link>
+          ) : null}
+          {canCreateFamily ? (
+            <Link
+              href="/groups/new?mode=family"
+              className="rounded-lg border border-white/25 px-3 py-2 text-sm font-semibold hover:bg-white/10"
+            >
               Create Family
             </Link>
           ) : null}
-          <AuthButtons showGroupDashboard={hasOwnedGroups} />
+          <AuthButtons
+            showGroupDashboard={hasOwnedGroups}
+            showFamilyDashboard={hasOwnedFamily}
+          />
         </div>
       </nav>
 

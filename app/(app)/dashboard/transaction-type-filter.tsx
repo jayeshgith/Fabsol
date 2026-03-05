@@ -10,20 +10,34 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 
 type Props = {
-  value: "personal" | "family";
+  value: "personal" | "society" | "family";
+  showSociety: boolean;
+  showFamily: boolean;
 };
 
-export default function TransactionTypeFilter({ value }: Props) {
+export default function TransactionTypeFilter({
+  value,
+  showSociety,
+  showFamily,
+}: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  function onValueChange(nextValue: "personal" | "family") {
+  function onValueChange(nextValue: "personal" | "society" | "family") {
     const params = new URLSearchParams(searchParams.toString());
 
     if (nextValue === "personal") {
       params.delete("scope");
     } else {
       params.set("scope", nextValue);
+    }
+
+    if (nextValue !== "family") {
+      params.delete("familyTxType");
+      params.delete("familyTxMonth");
+      params.delete("familyTxYear");
+      params.delete("familyTxDate");
+      params.delete("familyTxRange");
     }
 
     const query = params.toString();
@@ -39,7 +53,8 @@ export default function TransactionTypeFilter({ value }: Props) {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="personal">Personal</SelectItem>
-          <SelectItem value="family">Family</SelectItem>
+          {showSociety ? <SelectItem value="society">Society</SelectItem> : null}
+          {showFamily ? <SelectItem value="family">Family</SelectItem> : null}
         </SelectContent>
       </Select>
     </div>

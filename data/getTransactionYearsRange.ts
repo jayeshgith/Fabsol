@@ -2,6 +2,10 @@ import "server-only";
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
 import { Transaction } from "@/models/Transaction";
+import {
+  getPersonalAccountScopeFilter,
+  getSocietyAccountScopeFilter,
+} from "@/lib/account-scope";
 
 type TransactionScope = "all" | "personal" | "family";
 
@@ -11,12 +15,10 @@ function getScopeFilter(scope: TransactionScope) {
   }
 
   if (scope === "family") {
-    return { accountScope: "family" as const };
+    return getSocietyAccountScopeFilter();
   }
 
-  return {
-    $or: [{ accountScope: "personal" }, { accountScope: { $exists: false } }],
-  };
+  return getPersonalAccountScopeFilter();
 }
 
 export async function getTransactionYearsRange(options?: {

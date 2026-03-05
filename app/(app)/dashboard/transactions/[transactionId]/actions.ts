@@ -8,6 +8,11 @@ import { revalidatePath } from "next/cache";
 import z from "zod";
 import { Group } from "@/models/Group";
 import { User } from "@/models/User";
+import { Family } from "@/models/Family";
+import {
+  isSocietyAccountScope,
+  toCanonicalStoredAccountScope,
+} from "@/lib/account-scope";
 
 const updateSchema = transactionFormSchema.safeExtend({
   id: z.string().min(1, "Missing transaction id"),
@@ -49,6 +54,25 @@ async function canManageAsGroupOwner(params: {
   return allowedEmails.has(params.transactionUserEmail);
 }
 
+async function canManageAsFamilyOwner(params: {
+  actorId: string;
+  transactionUserEmail: string;
+}) {
+  const member = await User.findOne({ email: params.transactionUserEmail })
+    .select("_id")
+    .lean();
+  if (!member?._id) return false;
+
+  const family = await Family.findOne({
+    ownerId: params.actorId,
+    memberIds: String(member._id),
+  })
+    .select("_id")
+    .lean();
+
+  return Boolean(family?._id);
+}
+
 export async function updateTransactionAction(data: unknown) {
   try {
     const session = await auth();
@@ -76,17 +100,25 @@ export async function updateTransactionAction(data: unknown) {
 
     const transactionUserEmail = String(existingTransaction.userId ?? "").trim();
     const isSelfTransaction = transactionUserEmail === actorEmail;
+    const isSocietyTransaction = isSocietyAccountScope(existingTransaction.accountScope);
     const canManageByGroupOwnership =
       !isSelfTransaction &&
-      existingTransaction.accountScope === "family" &&
+      isSocietyTransaction &&
       Boolean(existingTransaction.groupId) &&
       (await canManageAsGroupOwner({
         actorId: String(actor._id),
         groupId: String(existingTransaction.groupId),
         transactionUserEmail,
       }));
+    const canManageByFamilyOwnership =
+      !isSelfTransaction &&
+      !isSocietyTransaction &&
+      (await canManageAsFamilyOwner({
+        actorId: String(actor._id),
+        transactionUserEmail,
+      }));
 
-    if (!isSelfTransaction && !canManageByGroupOwnership) {
+    if (!isSelfTransaction && !canManageByGroupOwnership && !canManageByFamilyOwnership) {
       return {
         success: false,
         message: "You do not have permission to update this transaction.",
@@ -95,10 +127,12 @@ export async function updateTransactionAction(data: unknown) {
 
     let groupId: string | null = null;
     const nextAccountScope = canManageByGroupOwnership
-      ? "family"
-      : parsed.accountScope;
+      ? "society"
+      : canManageByFamilyOwnership
+        ? "personal"
+        : toCanonicalStoredAccountScope(parsed.accountScope);
 
-    if (nextAccountScope === "family") {
+    if (nextAccountScope === "society") {
       if (canManageByGroupOwnership) {
         groupId = String(existingTransaction.groupId);
       } else {
@@ -112,7 +146,7 @@ export async function updateTransactionAction(data: unknown) {
         if (memberGroups.length === 0) {
           return {
             success: false,
-            message: "No family found for this account.",
+            message: "No society found for this account.",
           };
         }
 
@@ -145,6 +179,7 @@ export async function updateTransactionAction(data: unknown) {
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/transactions");
     revalidatePath("/groups/dashboard");
+    revalidatePath("/family/dashboard");
 
     return { success: true, message: "Transaction updated successfully." };
   } catch (error: unknown) {
@@ -182,17 +217,25 @@ export async function deleteTransactionAction(transactionId: string) {
 
     const transactionUserEmail = String(existingTransaction.userId ?? "").trim();
     const isSelfTransaction = transactionUserEmail === actorEmail;
+    const isSocietyTransaction = isSocietyAccountScope(existingTransaction.accountScope);
     const canManageByGroupOwnership =
       !isSelfTransaction &&
-      existingTransaction.accountScope === "family" &&
+      isSocietyTransaction &&
       Boolean(existingTransaction.groupId) &&
       (await canManageAsGroupOwner({
         actorId: String(actor._id),
         groupId: String(existingTransaction.groupId),
         transactionUserEmail,
       }));
+    const canManageByFamilyOwnership =
+      !isSelfTransaction &&
+      !isSocietyTransaction &&
+      (await canManageAsFamilyOwner({
+        actorId: String(actor._id),
+        transactionUserEmail,
+      }));
 
-    if (!isSelfTransaction && !canManageByGroupOwnership) {
+    if (!isSelfTransaction && !canManageByGroupOwnership && !canManageByFamilyOwnership) {
       return {
         success: false,
         message: "You do not have permission to delete this transaction.",
@@ -208,6 +251,7 @@ export async function deleteTransactionAction(transactionId: string) {
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/transactions");
     revalidatePath("/groups/dashboard");
+    revalidatePath("/family/dashboard");
 
     return { success: true, message: "Transaction deleted successfully." };
   } catch (error: unknown) {

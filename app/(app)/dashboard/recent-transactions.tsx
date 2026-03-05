@@ -33,7 +33,7 @@ const RecentTransactions = async ({
   const recentTransactions = await getRecentTransactions({ scope });
   const emptyMessage =
     scope === "family"
-      ? "You have no family transactions yet. Start by creating a new family transaction."
+      ? "You have no society transactions yet. Start by creating a new society transaction."
       : "You have no transactions yet. Start by creating a new transaction.";
 
   return (
@@ -68,7 +68,7 @@ const RecentTransactions = async ({
                 <TableHead>Description</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Category</TableHead>
-                {scope === "family" ? <TableHead>Family</TableHead> : null}
+                {scope === "family" ? <TableHead>Society</TableHead> : null}
                 <TableHead>Amount</TableHead>
                 {showRowActions ? (
                   <TableHead className="text-right">Actions</TableHead>
@@ -112,7 +112,7 @@ const RecentTransactions = async ({
                   {scope === "family" ? (
                     <TableCell>
                       <Badge variant="default">
-                        {transaction.historyLabel || "Family"}
+                        {transaction.historyLabel || "Society"}
                       </Badge>
                     </TableCell>
                   ) : null}

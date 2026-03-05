@@ -21,7 +21,7 @@ const Filters = ({
   year?: number;
   month?: number;
   yearsRange: number[];
-  scope?: "personal" | "family";
+  scope?: "personal" | "society";
 }) => {
   const [selectedMonth, setSelectedMonth] = useState(
     month ? month.toString() : "all",
@@ -37,8 +37,8 @@ const Filters = ({
   if (selectedYear !== "all") {
     queryParams.set("year", selectedYear);
   }
-  if (scope === "family") {
-    queryParams.set("scope", "family");
+  if (scope === "society") {
+    queryParams.set("scope", "society");
   }
 
   const href = queryParams.toString()

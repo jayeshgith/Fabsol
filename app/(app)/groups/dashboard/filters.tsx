@@ -42,7 +42,7 @@ export default function GroupFilters({
         onValueChange={(value) => updateQuery(value, year)}
       >
         <SelectTrigger className="w-[240px]">
-          <SelectValue placeholder="Select Group" />
+          <SelectValue placeholder="Select Society" />
         </SelectTrigger>
         <SelectContent>
           {groups.map((group) => (

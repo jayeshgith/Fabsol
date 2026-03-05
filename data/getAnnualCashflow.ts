@@ -4,17 +4,19 @@ import { connectDB } from "@/lib/db";
 import { Group } from "@/models/Group";
 import { Transaction } from "@/models/Transaction";
 import { User } from "@/models/User";
+import {
+  getPersonalAccountScopeFilter,
+  getSocietyAccountScopeFilter,
+} from "@/lib/account-scope";
 
 type TransactionScope = "personal" | "family";
 
 function getScopeFilter(scope: TransactionScope) {
   if (scope === "family") {
-    return { accountScope: "family" as const };
+    return getSocietyAccountScopeFilter();
   }
 
-  return {
-    $or: [{ accountScope: "personal" }, { accountScope: { $exists: false } }],
-  };
+  return getPersonalAccountScopeFilter();
 }
 
 export async function getAnnualCashflow(
@@ -104,7 +106,7 @@ export async function getAnnualCashflow(
     if (familyClauses.length === 0) return [];
 
     matchFilter = {
-      accountScope: "family",
+      ...getSocietyAccountScopeFilter(),
       $or: familyClauses,
       transactionDate: { $gte: start, $lt: end },
     };

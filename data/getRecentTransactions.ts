@@ -4,17 +4,20 @@ import { connectDB } from "@/lib/db";
 import { Group } from "@/models/Group";
 import { Transaction } from "@/models/Transaction";
 import { User } from "@/models/User";
+import {
+  getPersonalAccountScopeFilter,
+  getSocietyAccountScopeFilter,
+  toAccountScopeLabel,
+} from "@/lib/account-scope";
 
 type TransactionScope = "personal" | "family";
 
 function getScopeFilter(scope: TransactionScope) {
   if (scope === "family") {
-    return { accountScope: "family" as const };
+    return getSocietyAccountScopeFilter();
   }
 
-  return {
-    $or: [{ accountScope: "personal" }, { accountScope: { $exists: false } }],
-  };
+  return getPersonalAccountScopeFilter();
 }
 
 function getCategoryName(category: unknown): string {
@@ -119,7 +122,7 @@ export async function getRecentTransactions(
     const groupNameById = new Map(
       memberGroups.map((group) => [
         String(group._id),
-        String(group.name ?? "Family"),
+        String(group.name ?? "Society"),
       ]),
     );
 
@@ -142,7 +145,7 @@ export async function getRecentTransactions(
     if (familyClauses.length === 0) return [];
 
     transactions = await Transaction.find({
-      accountScope: "family",
+      ...getSocietyAccountScopeFilter(),
       $or: familyClauses,
     })
       .sort({ transactionDate: -1 })
@@ -164,7 +167,7 @@ export async function getRecentTransactions(
       canManage: String(t.userId ?? "") === userId,
       historyLabel:
         groupNameById.get(String(t.groupId ?? "")) ??
-        (t.accountScope === "family" ? "Family" : "Personal"),
+        toAccountScopeLabel(t.accountScope),
       memberEmail: String(t.userId ?? ""),
       memberName:
         memberNameByEmail.get(String(t.userId ?? "")) ??
@@ -188,7 +191,7 @@ export async function getRecentTransactions(
     category: getCategoryName(t.category),
     transactionType: getTransactionType(t.transactionType, t.category),
     canManage: String(t.userId ?? "") === userId,
-    historyLabel: t.accountScope === "family" ? "Family" : "Personal",
+    historyLabel: toAccountScopeLabel(t.accountScope),
     memberEmail: "",
     memberName: "",
   }));

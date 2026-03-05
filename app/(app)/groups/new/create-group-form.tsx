@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, UserPlus, Users, X } from "lucide-react";
@@ -20,8 +20,21 @@ type SearchUser = {
   image: string;
 };
 
-export default function CreateGroupForm() {
+type CreateGroupFormProps = {
+  mode?: "society" | "family";
+};
+
+export default function CreateGroupForm({
+  mode = "society",
+}: CreateGroupFormProps) {
   const router = useRouter();
+  const isFamilyMode = mode === "family";
+  const entityLabel = isFamilyMode ? "Family" : "Society";
+  const memberSearchEndpoint = isFamilyMode
+    ? "/api/users/search-family"
+    : "/api/users/search";
+  const createEndpoint = isFamilyMode ? "/api/families" : "/api/groups";
+  const successRedirect = isFamilyMode ? "/family/dashboard" : "/groups/dashboard";
 
   const [groupName, setGroupName] = useState("");
   const [query, setQuery] = useState("");
@@ -36,14 +49,14 @@ export default function CreateGroupForm() {
     [selectedMembers],
   );
 
-  async function loadMembers(searchQuery: string) {
+  const loadMembers = useCallback(async (searchQuery: string) => {
     setMessage("");
 
     setSearching(true);
 
     try {
       const res = await fetch(
-        `/api/users/search?query=${encodeURIComponent(searchQuery)}`,
+        `${memberSearchEndpoint}?query=${encodeURIComponent(searchQuery)}`,
         { cache: "no-store" },
       );
 
@@ -73,7 +86,7 @@ export default function CreateGroupForm() {
     } finally {
       setSearching(false);
     }
-  }
+  }, [memberSearchEndpoint]);
 
   async function onSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -82,7 +95,7 @@ export default function CreateGroupForm() {
 
   useEffect(() => {
     void loadMembers("");
-  }, []);
+  }, [loadMembers]);
 
   function addMember(user: SearchUser) {
     if (selectedMemberIdSet.has(user.id)) return;
@@ -100,19 +113,21 @@ export default function CreateGroupForm() {
 
     const trimmedGroupName = groupName.trim();
     if (!trimmedGroupName) {
-      setMessage("Family name is required.");
+      setMessage(`${entityLabel} name is required.`);
       return;
     }
 
     if (selectedMembers.length === 0) {
-      setMessage("Add at least one family member to create family.");
+      setMessage(
+        `Add at least one ${entityLabel.toLowerCase()} member to create a ${entityLabel.toLowerCase()}.`,
+      );
       return;
     }
 
     setCreating(true);
 
     try {
-      const res = await fetch("/api/groups", {
+      const res = await fetch(createEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -124,15 +139,19 @@ export default function CreateGroupForm() {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setMessage(data?.error ?? "Unable to create family.");
+        setMessage(
+          data?.error ?? `Unable to create ${entityLabel.toLowerCase()}.`,
+        );
         setCreating(false);
         return;
       }
 
-      router.push("/groups/dashboard");
+      router.push(successRedirect);
       router.refresh();
     } catch {
-      setMessage("Something went wrong while creating family.");
+      setMessage(
+        `Something went wrong while creating ${entityLabel.toLowerCase()}.`,
+      );
       setCreating(false);
     }
   }
@@ -141,9 +160,28 @@ export default function CreateGroupForm() {
     <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6">
       <div className="mb-6 flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Create Family</h1>
+          <div className="mb-3 flex flex-wrap gap-2">
+            <Button
+              asChild
+              variant={isFamilyMode ? "outline" : "default"}
+              size="sm"
+            >
+              <Link href="/groups/new">Create Society</Link>
+            </Button>
+            <Button
+              asChild
+              variant={isFamilyMode ? "default" : "outline"}
+              size="sm"
+            >
+              <Link href="/groups/new?mode=family">Create Family</Link>
+            </Button>
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Create {entityLabel}
+          </h1>
           <p className="mt-1 text-sm text-slate-600">
-            Create your family and add members by name or phone number.
+            Create your {entityLabel.toLowerCase()} and add members by name or
+            phone number.
           </p>
         </div>
         <Button variant="outline" asChild>
@@ -154,12 +192,14 @@ export default function CreateGroupForm() {
       <div className="space-y-6 rounded-2xl border bg-white p-5 shadow-sm sm:p-6">
         <div>
           <label className="mb-2 block text-sm font-medium text-slate-700">
-            Family Name
+            {entityLabel} Name
           </label>
           <Input
             value={groupName}
             onChange={(event) => setGroupName(event.target.value)}
-            placeholder="Example: Sharma Family"
+            placeholder={
+              isFamilyMode ? "Example: Sharma Family" : "Example: Greenview Society"
+            }
           />
         </div>
 
@@ -276,7 +316,7 @@ export default function CreateGroupForm() {
             disabled={creating}
             className="ml-auto"
           >
-            {creating ? "Creating Family..." : "Create Family"}
+            {creating ? `Creating ${entityLabel}...` : `Create ${entityLabel}`}
           </Button>
         </div>
 

@@ -32,7 +32,7 @@ const TransactionSchema = new Schema(
     },
     accountScope: {
       type: String,
-      enum: ["personal", "family"],
+      enum: ["personal", "family", "society"],
       required: true,
       default: "personal",
       index: true,
@@ -47,6 +47,19 @@ const TransactionSchema = new Schema(
 
   { timestamps: true },
 );
+
+const existingTransactionModel = models.Transaction;
+if (existingTransactionModel) {
+  const accountScopePath = existingTransactionModel.schema.path("accountScope") as {
+    options?: { enum?: string[] };
+  };
+  const enumValues = accountScopePath?.options?.enum ?? [];
+
+  // Refresh stale model when dev server hot-reloads older schema definitions.
+  if (!enumValues.includes("society")) {
+    delete models.Transaction;
+  }
+}
 
 export const Transaction =
   models.Transaction || model("Transaction", TransactionSchema);

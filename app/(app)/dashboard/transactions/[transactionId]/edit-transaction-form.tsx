@@ -44,7 +44,7 @@ const EditTransactionForm = ({
     if (result.success) {
       toast.success("Transaction updated successfully.", { duration: 4000 });
       if (data.accountScope === "family") {
-        router.push("/dashboard");
+        router.push("/dashboard?scope=society");
         router.refresh();
         return;
       }

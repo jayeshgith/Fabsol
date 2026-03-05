@@ -44,7 +44,7 @@ export default async function PricingPage() {
             Pricing
           </p>
           <h1 className="mx-auto mt-6 max-w-4xl text-4xl font-bold leading-tight sm:text-6xl">
-            Plans for Individuals and Groups
+            Plans for Individuals and Societies
           </h1>
         </div>
 
