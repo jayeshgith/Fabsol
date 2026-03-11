@@ -8,6 +8,7 @@ import {
   isValidTenDigitPhoneNumber,
   normalizePhoneNumber,
 } from "@/lib/profile";
+import { getUserAvatarUrl } from "@/lib/avatar";
 
 type ProfileFormState = {
   email: string;
@@ -36,8 +37,13 @@ export default function CompleteProfileForm({
   const isComplete =
     hasValue(form.name) &&
     hasValue(form.email) &&
-    hasValue(form.phone) &&
-    hasValue(form.image);
+    hasValue(form.phone);
+  const avatarPreviewSrc = getUserAvatarUrl({
+    image: form.image,
+    name: form.name,
+    email: form.email,
+    size: 160,
+  });
 
   async function onSubmit() {
     if (!isComplete) {
@@ -78,7 +84,7 @@ export default function CompleteProfileForm({
         image: form.image,
       });
 
-      router.push("/dashboard");
+      router.push("/");
       router.refresh();
     } catch {
       setMessage("Something went wrong. Please try again.");
@@ -99,7 +105,7 @@ export default function CompleteProfileForm({
               Complete Your Profile
             </h1>
             <p className="mt-3 max-w-xl text-sm text-slate-200/85">
-              Fill your required account details to enter your dashboard.
+              Fill your required account details to continue.
             </p>
 
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -155,33 +161,26 @@ export default function CompleteProfileForm({
               disabled={saving || !isComplete}
               className="mt-6 flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-cyan-400 via-blue-500 to-emerald-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {saving ? "Saving profile..." : "Continue to Dashboard"}
+              {saving ? "Saving profile..." : "Continue to Home"}
             </button>
           </section>
 
           <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-8">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-200/90">
-              Required Photo
+              Profile Photo
             </p>
             <h2 className="mt-3 text-2xl font-bold text-white">Upload Image</h2>
             <p className="mt-3 text-sm text-slate-200/85">
-              Upload your profile image (up to 5MB). This image appears in your
-              account.
+              Upload your profile image (up to 5MB). This step is optional.
             </p>
 
             <div className="mt-6 flex items-center gap-4">
               <div className="h-24 w-24 overflow-hidden rounded-2xl border border-white/15 bg-slate-800/80">
-                {form.image ? (
-                  <img
-                    src={form.image}
-                    alt="Profile preview"
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center text-xs text-slate-400">
-                    No image
-                  </div>
-                )}
+                <img
+                  src={avatarPreviewSrc}
+                  alt="Profile preview"
+                  className="h-full w-full object-cover"
+                />
               </div>
 
               <div className="flex-1">

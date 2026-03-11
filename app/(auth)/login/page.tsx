@@ -13,6 +13,7 @@ function LoginContent() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -116,7 +117,7 @@ function LoginContent() {
             }`}
           >
             <button
-              onClick={() => signIn("google", { callbackUrl: "/" })}
+              onClick={() => signIn("google", { callbackUrl })}
               className="group flex w-full items-center justify-center gap-3 rounded-xl border border-white/25 bg-slate-900/60 px-4 py-3 text-sm font-semibold text-slate-50 transition-all duration-300 hover:border-amber-200/50 hover:bg-slate-800/70"
             >
               <svg
@@ -187,23 +188,51 @@ function LoginContent() {
               <input
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                type="password"
-                placeholder="Password"
-                className="w-full rounded-xl border border-white/20 bg-slate-950/60 px-4 py-3 text-sm text-slate-50 placeholder-slate-400/70 transition-all duration-300 focus:border-amber-300/40 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter password"
+                className="w-full rounded-xl border border-white/20 bg-slate-950/60 px-4 py-3 pr-20 text-sm text-slate-50 placeholder-slate-400/70 transition-all duration-300 focus:border-amber-300/40 focus:outline-none focus:ring-2 focus:ring-amber-400"
               />
-              <svg
-                className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-amber-300"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+              <button
+                type="button"
+                onClick={() => setShowPassword((current) => !current)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300/70 transition-colors duration-200 hover:text-amber-200"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                />
-              </svg>
+                {showPassword ? (
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-4.803m5.596-3.856a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0z"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                    />
+                  </svg>
+                )}
+              </button>
             </div>
           </div>
 

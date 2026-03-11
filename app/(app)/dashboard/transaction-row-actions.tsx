@@ -19,7 +19,7 @@ import { deleteTransactionAction } from "./transactions/[transactionId]/actions"
 
 const TransactionRowActions = ({
   transactionId,
-  deleteFirst = false,
+  deleteFirst = true,
 }: {
   transactionId: string;
   deleteFirst?: boolean;

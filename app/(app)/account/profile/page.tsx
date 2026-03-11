@@ -8,6 +8,7 @@ import {
   isValidTenDigitPhoneNumber,
   normalizePhoneNumber,
 } from "@/lib/profile";
+import { getUserAvatarUrl } from "@/lib/avatar";
 
 type ProfileResponse = {
   email: string;
@@ -56,8 +57,8 @@ export default function ProfilePage() {
   }, []);
 
   async function save() {
-    if (!hasValue(form.name) || !hasValue(form.phone) || !hasValue(form.image)) {
-      setMsg("Name, phone and profile image are required.");
+    if (!hasValue(form.name) || !hasValue(form.phone)) {
+      setMsg("Name and phone are required.");
       return;
     }
 
@@ -105,11 +106,18 @@ export default function ProfilePage() {
     );
   }
 
+  const avatarPreviewSrc = getUserAvatarUrl({
+    image: form.image,
+    name: form.name,
+    email: form.email,
+    size: 160,
+  });
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <div className="mx-auto max-w-3xl p-6 md:p-8">
+      <div className="mx-auto max-w-3xl p-4 sm:p-6 md:p-8">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
             Profile Settings
           </h1>
           <p className="mt-2 text-base text-slate-600">
@@ -117,7 +125,7 @@ export default function ProfilePage() {
           </p>
         </div>
 
-        <div className="space-y-6 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+        <div className="space-y-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-slate-700">
               Email Address
@@ -174,25 +182,13 @@ export default function ProfilePage() {
             <label className="block text-sm font-semibold text-slate-700">
               Profile Photo
             </label>
-            <div className="flex items-center gap-5">
+            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-5">
               <div className="relative h-20 w-20 overflow-hidden rounded-full border-4 border-slate-200 bg-gradient-to-br from-slate-100 to-slate-200 shadow-md">
-                {form.image ? (
-                  <img
-                    src={form.image}
-                    alt="Profile"
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center">
-                    <svg
-                      className="h-8 w-8 text-slate-400"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                    </svg>
-                  </div>
-                )}
+                <img
+                  src={avatarPreviewSrc}
+                  alt="Profile"
+                  className="h-full w-full object-cover"
+                />
               </div>
               <div className="flex-1">
                 <UploadButton

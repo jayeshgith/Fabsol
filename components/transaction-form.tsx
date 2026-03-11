@@ -146,7 +146,7 @@ const TransactionForm = ({
         ) : null}
         <fieldset
           disabled={form.formState.isSubmitting}
-          className="grid grid-cols-2 gap-y-5 gap-x-2 items-start"
+          className="grid grid-cols-1 items-start gap-x-2 gap-y-5 sm:grid-cols-2"
         >
           <FormField
             control={form.control}

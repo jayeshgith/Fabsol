@@ -5,6 +5,55 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import AuthBreadcrumbs from "@/components/auth-breadcrumbs";
 
+const LOWERCASE_CHARS = "abcdefghijklmnopqrstuvwxyz";
+const UPPERCASE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const NUMBER_CHARS = "0123456789";
+const SYMBOL_CHARS = "!@#$%^&*()_+-=[]{}|;:,.<>?";
+
+function generateStrongPassword(length = 14) {
+  const safeLength = Math.max(12, length);
+  const allChars =
+    LOWERCASE_CHARS + UPPERCASE_CHARS + NUMBER_CHARS + SYMBOL_CHARS;
+
+  const rngValues = new Uint32Array(safeLength + 8);
+  const hasCrypto =
+    typeof globalThis !== "undefined" &&
+    Boolean(globalThis.crypto?.getRandomValues);
+
+  if (hasCrypto) {
+    globalThis.crypto.getRandomValues(rngValues);
+  } else {
+    for (let i = 0; i < rngValues.length; i += 1) {
+      rngValues[i] = Math.floor(Math.random() * 0xffffffff);
+    }
+  }
+
+  let cursor = 0;
+  const nextIndex = (max: number) => {
+    const value = rngValues[cursor % rngValues.length];
+    cursor += 1;
+    return value % max;
+  };
+
+  const picks = [
+    LOWERCASE_CHARS[nextIndex(LOWERCASE_CHARS.length)],
+    UPPERCASE_CHARS[nextIndex(UPPERCASE_CHARS.length)],
+    NUMBER_CHARS[nextIndex(NUMBER_CHARS.length)],
+    SYMBOL_CHARS[nextIndex(SYMBOL_CHARS.length)],
+  ];
+
+  while (picks.length < safeLength) {
+    picks.push(allChars[nextIndex(allChars.length)]);
+  }
+
+  for (let i = picks.length - 1; i > 0; i -= 1) {
+    const swapIndex = nextIndex(i + 1);
+    [picks[i], picks[swapIndex]] = [picks[swapIndex], picks[i]];
+  }
+
+  return picks.join("");
+}
+
 export default function SignupPage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -14,6 +63,7 @@ export default function SignupPage() {
 
   const [showPass, setShowPass] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [passwordNotice, setPasswordNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
@@ -23,6 +73,7 @@ export default function SignupPage() {
 
   async function handleSignup() {
     setMsg(null);
+    setPasswordNotice(null);
     setLoading(true);
 
     if (password !== confirmPassword) {
@@ -59,6 +110,15 @@ export default function SignupPage() {
       setMsg(e?.message || "Something went wrong");
       setLoading(false);
     }
+  }
+
+  function handleGeneratePassword() {
+    const generatedPassword = generateStrongPassword();
+    setPassword(generatedPassword);
+    setConfirmPassword(generatedPassword);
+    setShowPass(true);
+    setMsg(null);
+    setPasswordNotice("Strong password generated and applied.");
   }
 
   return (
@@ -208,9 +268,18 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-medium text-slate-200/85">
-                Password
-              </label>
+              <div className="mb-2 flex items-center justify-between">
+                <label className="block text-xs font-medium text-slate-200/85">
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={handleGeneratePassword}
+                  className="text-xs font-semibold text-amber-300 transition-colors duration-200 hover:text-amber-200"
+                >
+                  Auto-generate
+                </button>
+              </div>
               <div className="relative">
                 <svg
                   className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-amber-300/70"
@@ -228,7 +297,7 @@ export default function SignupPage() {
                 <input
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="********"
+                  placeholder="Enter password"
                   type={showPass ? "text" : "password"}
                   className="w-full rounded-xl border border-white/20 bg-slate-950/60 py-3 pl-12 pr-12 text-sm text-slate-50 placeholder-slate-400/70 transition-all duration-300 focus:border-amber-300/40 focus:outline-none focus:ring-2 focus:ring-amber-400"
                 />
@@ -297,11 +366,55 @@ export default function SignupPage() {
                 <input
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="********"
+                  placeholder="Re-enter password"
                   type={showPass ? "text" : "password"}
                   className="w-full rounded-xl border border-white/20 bg-slate-950/60 py-3 pl-12 pr-12 text-sm text-slate-50 placeholder-slate-400/70 transition-all duration-300 focus:border-amber-300/40 focus:outline-none focus:ring-2 focus:ring-amber-400"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPass((v) => !v)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300/70 transition-colors duration-200 hover:text-amber-200"
+                >
+                  {showPass ? (
+                    <svg
+                      className="h-5 w-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-4.803m5.596-3.856a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0z"
+                      />
+                    </svg>
+                  ) : (
+                    <svg
+                      className="h-5 w-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                      />
+                    </svg>
+                  )}
+                </button>
               </div>
+              {passwordNotice ? (
+                <p className="mt-2 text-xs text-emerald-300/90">{passwordNotice}</p>
+              ) : null}
             </div>
           </div>
 

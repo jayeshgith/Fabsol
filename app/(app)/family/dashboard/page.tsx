@@ -20,6 +20,7 @@ import CashflowChart from "../../groups/dashboard/cashflow-chart";
 import FamilyManagement from "./family-management";
 import FamilyRecentTransactionsFilters from "./recent-transactions-filters";
 import TransactionRowActionsClient from "../../dashboard/transaction-row-actions.client";
+import { getUserAvatarUrl } from "@/lib/avatar";
 
 export default async function FamilyDashboardPage({
   searchParams,
@@ -82,7 +83,7 @@ export default async function FamilyDashboardPage({
   const familyBalance = familyIncome - familyExpenses;
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 py-5">
+    <div className="mx-auto max-w-7xl space-y-6 px-4 py-5 sm:px-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Family Dashboard</h1>
@@ -90,8 +91,13 @@ export default async function FamilyDashboardPage({
             Family overview based on members personal transactions.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" asChild>
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          {data.hasFamily && data.canManageFamily ? (
+            <Button asChild className="w-full sm:w-auto">
+              <Link href={`/family/${data.familyId}/transfer`}>Money Transfer</Link>
+            </Button>
+          ) : null}
+          <Button variant="outline" asChild className="w-full sm:w-auto">
             <Link href="/dashboard">Main Dashboard</Link>
           </Button>
         </div>
@@ -192,21 +198,21 @@ export default async function FamilyDashboardPage({
                   <TableBody>
                     {data.memberSummaries.map((member) => {
                       const balance = member.totalIncome - member.totalExpenses;
+                      const memberAvatarSrc = getUserAvatarUrl({
+                        image: member.image,
+                        name: member.name,
+                        email: member.email,
+                        size: 72,
+                      });
                       return (
                         <TableRow key={member.id}>
                           <TableCell>
                             <div className="flex items-center gap-3">
-                              {member.image ? (
-                                <img
-                                  src={member.image}
-                                  alt={member.name || "Member"}
-                                  className="h-9 w-9 rounded-full border border-slate-200 object-cover"
-                                />
-                              ) : (
-                                <div className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-300 bg-slate-200 text-xs font-semibold text-slate-600">
-                                  {member.name?.trim()?.charAt(0)?.toUpperCase() || "M"}
-                                </div>
-                              )}
+                              <img
+                                src={memberAvatarSrc}
+                                alt={member.name || "Member"}
+                                className="h-9 w-9 rounded-full border border-slate-200 object-cover"
+                              />
                               <div className="flex flex-col">
                                 <span className="font-medium">{member.name}</span>
                                 <span className="text-xs text-slate-500">

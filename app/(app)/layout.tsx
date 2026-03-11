@@ -25,9 +25,11 @@ export default async function AppLayout({
   const user = await User.findOne({ email: session.user.email }).lean();
   const groupAccess = await getGroupAccessByEmail(session.user.email);
   const familyAccess = await getFamilyAccessByEmail(session.user.email);
-  const hasOwnedGroups = groupAccess?.hasOwnedGroups ?? false;
+  const hasSocietyMembership =
+    (groupAccess?.hasOwnedGroups ?? false) ||
+    (groupAccess?.isMemberInOtherGroup ?? false);
   const canCreateGroup = groupAccess?.canCreateGroup ?? false;
-  const hasOwnedFamily = familyAccess?.hasOwnedFamily ?? false;
+  const hasFamilyMembership = familyAccess?.hasFamilyMembership ?? false;
   const canCreateFamily = familyAccess?.canCreateFamily ?? false;
 
   if (
@@ -43,51 +45,96 @@ export default async function AppLayout({
 
   return (
     <>
-      <nav className="bg-primary p-8 text-white h-20 flex items-center justify-between">
-        <Link href="/" className="text-2xl font-bold gap-2 flex items-center">
-          <LandmarkIcon className="text-lime-500" />
-          PinTrust
-        </Link>
-
-        <div className="flex items-center gap-3">
+      <nav className="bg-primary text-white">
+        <div className="mx-auto flex w-full max-w-7xl items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <Link
             href="/"
-            className="rounded-lg border border-white/25 px-3 py-2 text-sm font-semibold hover:bg-white/10"
+            className="mr-auto flex items-center gap-2 text-xl font-bold sm:text-2xl"
           >
-            Home
+            <LandmarkIcon className="text-lime-500" />
+            PinTrust
           </Link>
-          <Link
-            href="/pricing"
-            className="rounded-lg border border-white/25 px-3 py-2 text-sm font-semibold hover:bg-white/10"
-          >
-            Pricing
-          </Link>
-          {canCreateGroup ? (
+
+          <div className="hidden items-center gap-3 md:flex">
             <Link
-              href="/groups/new"
+              href="/"
               className="rounded-lg border border-white/25 px-3 py-2 text-sm font-semibold hover:bg-white/10"
             >
-              Create Society
+              Home
             </Link>
-          ) : null}
-          {canCreateFamily ? (
             <Link
-              href="/groups/new?mode=family"
+              href="/pricing"
               className="rounded-lg border border-white/25 px-3 py-2 text-sm font-semibold hover:bg-white/10"
             >
-              Create Family
+              Upgrade Plan
             </Link>
-          ) : null}
-          <AuthButtons
-            showGroupDashboard={hasOwnedGroups}
-            showFamilyDashboard={hasOwnedFamily}
-          />
+            {canCreateGroup ? (
+              <Link
+                href="/groups/new"
+                className="rounded-lg border border-white/25 px-3 py-2 text-sm font-semibold hover:bg-white/10"
+              >
+                Create Society
+              </Link>
+            ) : null}
+            {canCreateFamily ? (
+              <Link
+                href="/groups/new?mode=family"
+                className="rounded-lg border border-white/25 px-3 py-2 text-sm font-semibold hover:bg-white/10"
+              >
+                Create Family
+              </Link>
+            ) : null}
+            <AuthButtons
+              showGroupDashboard={hasSocietyMembership}
+              showFamilyDashboard={hasFamilyMembership}
+            />
+          </div>
+
+          <details className="relative ml-auto md:hidden">
+            <summary className="cursor-pointer list-none rounded-lg border border-white/25 px-3 py-2 text-xs font-semibold hover:bg-white/10 [&::-webkit-details-marker]:hidden">
+              Menu
+            </summary>
+            <div className="absolute right-0 top-11 z-50 flex w-64 flex-col gap-2 rounded-xl border border-white/15 bg-slate-950/95 p-3 shadow-2xl">
+              <Link
+                href="/"
+                className="rounded-lg border border-white/15 px-3 py-2 text-sm font-semibold hover:bg-white/10"
+              >
+                Home
+              </Link>
+              <Link
+                href="/pricing"
+                className="rounded-lg border border-white/15 px-3 py-2 text-sm font-semibold hover:bg-white/10"
+              >
+                Upgrade Plan
+              </Link>
+              {canCreateGroup ? (
+                <Link
+                  href="/groups/new"
+                  className="rounded-lg border border-white/15 px-3 py-2 text-sm font-semibold hover:bg-white/10"
+                >
+                  Create Society
+                </Link>
+              ) : null}
+              {canCreateFamily ? (
+                <Link
+                  href="/groups/new?mode=family"
+                  className="rounded-lg border border-white/15 px-3 py-2 text-sm font-semibold hover:bg-white/10"
+                >
+                  Create Family
+                </Link>
+              ) : null}
+              <AuthButtons
+                showGroupDashboard={hasSocietyMembership}
+                showFamilyDashboard={hasFamilyMembership}
+              />
+            </div>
+          </details>
         </div>
       </nav>
 
       <AppBreadcrumbs />
       <NotificationListener />
-      {children}
+      <main className="pb-6">{children}</main>
     </>
   );
 }

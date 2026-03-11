@@ -19,6 +19,7 @@ import GroupFilters from "./filters";
 import GroupManagement from "./group-management";
 import RecentTransactionsFilters from "./recent-transactions-filters";
 import TransactionRowActionsClient from "../../dashboard/transaction-row-actions.client";
+import { getUserAvatarUrl } from "@/lib/avatar";
 
 export default async function GroupDashboardPage({
   searchParams,
@@ -78,7 +79,7 @@ export default async function GroupDashboardPage({
   const familyBalance = familyIncome - familyExpenses;
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 py-5">
+    <div className="mx-auto max-w-7xl space-y-6 px-4 py-5 sm:px-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Society Dashboard</h1>
@@ -86,8 +87,8 @@ export default async function GroupDashboardPage({
             Society transactions overview for society heads/admins.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" asChild>
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <Button variant="outline" asChild className="w-full sm:w-auto">
             <Link href="/dashboard">Main Dashboard</Link>
           </Button>
         </div>
@@ -188,21 +189,21 @@ export default async function GroupDashboardPage({
                 <TableBody>
                   {data.memberSummaries.map((member) => {
                     const balance = member.totalIncome - member.totalExpenses;
+                    const memberAvatarSrc = getUserAvatarUrl({
+                      image: member.image,
+                      name: member.name,
+                      email: member.email,
+                      size: 72,
+                    });
                     return (
                       <TableRow key={member.id}>
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            {member.image ? (
-                              <img
-                                src={member.image}
-                                alt={member.name || "Member"}
-                                className="h-9 w-9 rounded-full object-cover border border-slate-200"
-                              />
-                            ) : (
-                              <div className="h-9 w-9 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-semibold border border-slate-300">
-                                {member.name?.trim()?.charAt(0)?.toUpperCase() || "M"}
-                              </div>
-                            )}
+                            <img
+                              src={memberAvatarSrc}
+                              alt={member.name || "Member"}
+                              className="h-9 w-9 rounded-full object-cover border border-slate-200"
+                            />
                             <div className="flex flex-col">
                               <span className="font-medium">{member.name}</span>
                               <span className="text-xs text-slate-500">

@@ -1,44 +1,61 @@
 import "server-only";
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
+import { Group } from "@/models/Group";
 import { Transaction } from "@/models/Transaction";
-import {
-  getPersonalAccountScopeFilter,
-  getSocietyAccountScopeFilter,
-} from "@/lib/account-scope";
+import { User } from "@/models/User";
+import { getSocietyAccountScopeFilter } from "@/lib/account-scope";
 
 type TransactionScope = "all" | "personal" | "family";
-
-function getScopeFilter(scope: TransactionScope) {
-  if (scope === "all") {
-    return {};
-  }
-
-  if (scope === "family") {
-    return getSocietyAccountScopeFilter();
-  }
-
-  return getPersonalAccountScopeFilter();
-}
 
 export async function getTransactionYearsRange(options?: {
   scope?: TransactionScope;
 }) {
   
   const session = await auth();
+  const userEmail = String(session?.user?.email ?? "").trim();
+  if (!userEmail) return [];
 
-  if (!session?.user) return [];
-
-  
-  const userId = session.user.email!;
+  const userId = userEmail;
 
 
   await connectDB();
   const scope = options?.scope ?? "all";
+  let scopeFilter: Record<string, unknown> = {};
+
+  if (scope === "family") {
+    scopeFilter = getSocietyAccountScopeFilter();
+  } else if (scope === "personal") {
+    const currentUser = await User.findOne({ email: userId }).select("_id").lean();
+    const currentUserId = currentUser?._id ? String(currentUser._id) : "";
+    const activeGroupIds = currentUserId
+      ? (
+          await Group.find({
+            $or: [{ ownerId: currentUserId }, { memberIds: currentUserId }],
+          })
+            .select("_id")
+            .lean()
+        ).map((group) => String(group._id))
+      : [];
+
+    const personalScopeClauses: Record<string, unknown>[] = [
+      { accountScope: "personal" },
+      { accountScope: { $exists: false } },
+    ];
+
+    if (activeGroupIds.length > 0) {
+      personalScopeClauses.push({
+        accountScope: { $in: ["family", "society"] },
+        groupId: { $in: activeGroupIds },
+      });
+    }
+
+    scopeFilter = { $or: personalScopeClauses };
+  }
 
   const earliest = await Transaction.findOne({
     userId,
-    ...getScopeFilter(scope),
+    ...scopeFilter,
   })
     .sort({ transactionDate: 1 })
     .lean();

@@ -9,6 +9,7 @@ import {
   UserIcon,
   LogOutIcon,
 } from "lucide-react";
+import { getUserAvatarUrl } from "@/lib/avatar";
 
 export default function UserDropdown() {
   const { data: session } = useSession();
@@ -29,21 +30,23 @@ export default function UserDropdown() {
 
   const name = session.user.name ?? "User";
   const image = session.user.image ?? "";
+  const avatarSrc = getUserAvatarUrl({
+    image,
+    name,
+    email: session.user.email,
+    size: 64,
+  });
 
   return (
     <div ref={boxRef} className="relative flex items-center gap-3">
       <div className="flex items-center gap-2">
         <div className="h-9 w-9 overflow-hidden rounded-full border border-white/20 bg-white/10 flex items-center justify-center">
-          {image ? (
-            <img
-              src={image}
-              alt="Profile"
-              className="h-full w-full object-cover"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <UserIcon size={18} className="text-white/80" />
-          )}
+          <img
+            src={avatarSrc}
+            alt={name}
+            className="h-full w-full object-cover"
+            referrerPolicy="no-referrer"
+          />
         </div>
 
         <span className="text-sm font-medium text-white">{name}</span>

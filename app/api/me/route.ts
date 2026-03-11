@@ -52,7 +52,7 @@ export async function PATCH(req: Request) {
   ) {
     const phoneError = !isValidTenDigitPhoneNumber(phone)
       ? "Phone number must contain exactly 10 digits."
-      : "Name, email, phone number, and profile image are required.";
+      : "Name, email, and phone number are required.";
 
     return NextResponse.json(
       {

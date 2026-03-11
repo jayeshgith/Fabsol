@@ -12,7 +12,7 @@ type Props = {
   deleteFirst?: boolean;
 };
 
-const TransactionRowActionsClient = ({ transactionId, deleteFirst = false }: Props) => {
+const TransactionRowActionsClient = ({ transactionId, deleteFirst = true }: Props) => {
   return (
     <TransactionRowActionsNoSSR
       transactionId={transactionId}

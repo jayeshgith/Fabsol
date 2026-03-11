@@ -44,7 +44,7 @@ const CashFlowContent = ({
             color: "#f97316",
           },
         }}
-        className="w-full h-[300px]"
+        className="h-[260px] w-full sm:h-[300px]"
       >
         <BarChart data={annualCashflow}>
           <CartesianGrid vertical={false} />
@@ -105,7 +105,7 @@ const CashFlowContent = ({
           />
         </BarChart>
       </ChartContainer>
-      <div className="border-l px-4 flex flex-col gap-4 justify-center">
+      <div className="flex flex-col justify-center gap-4 border-t pt-4 md:border-l md:border-t-0 md:px-4 md:pt-0">
         <div>
           <span className="text-muted-foreground font-bold text-sm">Income</span>
           <h2 className="text-3xl font-semibold">

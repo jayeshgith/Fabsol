@@ -7,8 +7,11 @@ import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { Group } from "@/models/Group";
 import { User } from "@/models/User";
+import { Family } from "@/models/Family";
 import { Category } from "@/models/Category";
 import { toCanonicalStoredAccountScope } from "@/lib/account-scope";
+import { getFamilyYearBalanceSummary } from "@/lib/family-balance";
+import { getSocietyYearBalanceSummary, toInrAmount } from "@/lib/society-balance";
 
 export const createTransactionAction = async (data: unknown) => {
   try {
@@ -27,6 +30,8 @@ export const createTransactionAction = async (data: unknown) => {
 
     const storedAccountScope = toCanonicalStoredAccountScope(parsed.accountScope);
     let groupId: string | null = null;
+    let currentUserId = "";
+
     if (storedAccountScope === "society") {
       const currentUser = await User.findOne({ email: session.user.email })
         .select("_id")
@@ -34,9 +39,10 @@ export const createTransactionAction = async (data: unknown) => {
       if (!currentUser?._id) {
         return { success: false, message: "User not found." };
       }
+      currentUserId = String(currentUser._id);
 
       const memberGroups = await Group.find({
-        memberIds: String(currentUser._id),
+        memberIds: currentUserId,
       })
         .select("_id")
         .sort({ createdAt: 1 })
@@ -54,6 +60,62 @@ export const createTransactionAction = async (data: unknown) => {
         memberGroups.find((group) => String(group._id) === requestedGroupId) ??
         memberGroups[0];
       groupId = String(selectedGroup._id);
+
+      if (parsed.transactionType === "expense") {
+        const { remaining } = await getSocietyYearBalanceSummary({
+          groupId,
+          transactionDate: parsed.transactionDate,
+        });
+
+        if (parsed.amount > remaining) {
+          return {
+            success: false,
+            message: `You cannot create this transaction. Remaining society amount is ${toInrAmount(remaining)}, but entered expense is ${toInrAmount(parsed.amount)}.`,
+          };
+        }
+      }
+    } else if (storedAccountScope === "personal" && parsed.transactionType === "expense") {
+      const currentUser = await User.findOne({ email: session.user.email })
+        .select("_id")
+        .lean();
+      if (!currentUser?._id) {
+        return { success: false, message: "User not found." };
+      }
+
+      currentUserId = String(currentUser._id);
+      const family = await Family.findOne({ memberIds: currentUserId })
+        .select("_id memberIds")
+        .lean();
+
+      if (family?._id) {
+        const memberIds = Array.isArray(family.memberIds)
+          ? family.memberIds
+              .map((id: unknown) => String(id).trim())
+              .filter(Boolean)
+          : [];
+        const members = memberIds.length
+          ? await User.find({ _id: { $in: memberIds } }).select("email").lean()
+          : [];
+        const familyEmails = members
+          .map((member) => String(member.email ?? "").trim())
+          .filter(Boolean);
+
+        if (!familyEmails.includes(userId)) {
+          familyEmails.push(userId);
+        }
+
+        const { remaining } = await getFamilyYearBalanceSummary({
+          memberEmails: familyEmails,
+          transactionDate: parsed.transactionDate,
+        });
+
+        if (parsed.amount > remaining) {
+          return {
+            success: false,
+            message: `You cannot create this transaction. Remaining family amount is ${toInrAmount(remaining)}, but entered expense is ${toInrAmount(parsed.amount)}.`,
+          };
+        }
+      }
     }
 
     await Category.findOneAndUpdate(
@@ -87,6 +149,7 @@ export const createTransactionAction = async (data: unknown) => {
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/transactions");
     revalidatePath("/groups/dashboard");
+    revalidatePath("/family/dashboard");
 
     return {
       success: true,

@@ -118,6 +118,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { signOut, useSession } from "next-auth/react";
+import { getUserAvatarUrl } from "@/lib/avatar";
 
 export default function AuthButtons({
   showGroupDashboard = false,
@@ -144,17 +145,17 @@ export default function AuthButtons({
   
   if (!session?.user) {
     return (
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <Link
           href="/login"
-          className="rounded-lg px-4 py-2 text-sm font-medium hover:bg-white/10"
+          className="rounded-lg px-3 py-2 text-xs font-medium hover:bg-white/10 sm:px-4 sm:text-sm"
         >
           Sign in
         </Link>
 
         <Link
           href="/signup"
-          className="rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/20"
+          className="rounded-lg bg-white/10 px-3 py-2 text-xs font-semibold hover:bg-white/20 sm:px-4 sm:text-sm"
         >
           Sign up
         </Link>
@@ -165,26 +166,26 @@ export default function AuthButtons({
  
   const name = session.user.name ?? "User";
   const image = session.user.image;
+  const avatarSrc = getUserAvatarUrl({
+    image,
+    name,
+    email: session.user.email,
+    size: 64,
+  });
 
   return (
     <div ref={ref} className="relative z-50">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-3 rounded-xl bg-white/10 px-3 py-2 hover:bg-white/20"
+        className="flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2 hover:bg-white/20 sm:gap-3"
       >
         <div className="h-9 w-9 overflow-hidden rounded-full bg-white/10">
-          {image ? (
-            <img
-              src={image}
-              alt={name}
-              className="h-9 w-9 rounded-full object-cover"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <div className="h-9 w-9 flex items-center justify-center text-sm font-bold">
-              {name.slice(0, 1).toUpperCase()}
-            </div>
-          )}
+          <img
+            src={avatarSrc}
+            alt={name}
+            className="h-9 w-9 rounded-full object-cover"
+            referrerPolicy="no-referrer"
+          />
         </div>
 
         <div className="hidden sm:flex flex-col items-start leading-tight">

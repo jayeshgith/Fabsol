@@ -65,7 +65,7 @@ export default function CashFlowFilters({ year, yearsRange }: Props) {
       defaultValue={year.toString()}
       onValueChange={(value) => router.push(`/dashboard?cfyear=${value}`)}
     >
-      <SelectTrigger className="w-[110px]">
+      <SelectTrigger className="w-full sm:w-[110px]">
         <SelectValue />
       </SelectTrigger>
 

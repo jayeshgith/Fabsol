@@ -148,10 +148,10 @@ const EditTransactionPage = async ({
   };
 
   return (
-    <div className="max-w-7xl mx-auto py-10">
-      <Card className="mt-8 p-6 max-w-3xl">
+    <div>
+      <Card className="mt-8 w-full max-w-3xl p-4 sm:p-6">
         <CardHeader className="text-2xl font-bold">
-          <CardTitle className="flex justify-between items-center">
+          <CardTitle className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <span>Edit Transaction</span>
             <DeleteTransactionDialog
               transactionId={transaction.id}

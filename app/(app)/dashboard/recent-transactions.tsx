@@ -15,6 +15,21 @@ import Link from "next/link";
 import numeral from "numeral";
 import TransactionRowActionsClient from "./transaction-row-actions.client";
 
+function isFamilyTransferTransaction(params: {
+  category: unknown;
+  description: unknown;
+}) {
+  const normalizedCategory = String(params.category ?? "").trim().toLowerCase();
+  const normalizedDescription = String(params.description ?? "").trim().toLowerCase();
+
+  return (
+    normalizedCategory === "paid money" ||
+    normalizedCategory === "money transfer" ||
+    normalizedDescription.startsWith("paid money:") ||
+    normalizedDescription.startsWith("family money transfer")
+  );
+}
+
 const RecentTransactions = async ({
   scope = "personal",
   title = "Recent Transactions",
@@ -39,14 +54,14 @@ const RecentTransactions = async ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+        <CardTitle className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <span>{title}</span>
           {showActions ? (
-            <div className="flex gap-2">
-              <Button variant="outline" asChild>
+            <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
+              <Button variant="outline" asChild className="w-full sm:w-auto">
                 <Link href={viewAllHref}>View All</Link>
               </Button>
-              <Button asChild>
+              <Button asChild className="w-full sm:w-auto">
                 <Link href={createHref}>Create New</Link>
               </Button>
             </div>
@@ -68,6 +83,7 @@ const RecentTransactions = async ({
                 <TableHead>Description</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Category</TableHead>
+                {scope === "personal" ? <TableHead>Transaction</TableHead> : null}
                 {scope === "family" ? <TableHead>Society</TableHead> : null}
                 <TableHead>Amount</TableHead>
                 {showRowActions ? (
@@ -76,60 +92,82 @@ const RecentTransactions = async ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {recentTransactions?.map((transaction) => (
-                <TableRow key={transaction.id}>
-                  <TableCell>
-                    {transaction.transactionDate
-                      ? format(
-                          new Date(transaction.transactionDate),
-                          "do MMM yyyy",
-                        )
-                      : "-"}
-                  </TableCell>
-                  {scope === "family" ? (
+              {recentTransactions?.map((transaction) => {
+                const isFamilyTransferTx = isFamilyTransferTransaction({
+                  category: transaction.category,
+                  description: transaction.description,
+                });
+
+                return (
+                  <TableRow key={transaction.id}>
                     <TableCell>
-                      <div className="flex flex-col">
-                        <span>{transaction.memberName || "Member"}</span>
-                        <span className="text-xs text-slate-500">
-                          {transaction.memberEmail || "-"}
-                        </span>
-                      </div>
+                      {transaction.transactionDate
+                        ? format(
+                            new Date(transaction.transactionDate),
+                            "do MMM yyyy",
+                          )
+                        : "-"}
                     </TableCell>
-                  ) : null}
-                  <TableCell>{transaction.description || "-"}</TableCell>
-                  <TableCell className="capitalize">
-                    <Badge
-                      className={
-                        transaction.transactionType === "income"
-                          ? "bg-green-500"
-                          : "bg-red-500"
-                      }
-                    >
-                      {transaction.transactionType}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{transaction.category}</TableCell>
-                  {scope === "family" ? (
-                    <TableCell>
-                      <Badge variant="default">
-                        {transaction.historyLabel || "Society"}
+                    {scope === "family" ? (
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span>{transaction.memberName || "Member"}</span>
+                          <span className="text-xs text-slate-500">
+                            {transaction.memberEmail || "-"}
+                          </span>
+                        </div>
+                      </TableCell>
+                    ) : null}
+                    <TableCell>{transaction.description || "-"}</TableCell>
+                    <TableCell className="capitalize">
+                      <Badge
+                        className={
+                          transaction.transactionType === "income"
+                            ? "bg-green-500"
+                            : "bg-red-500"
+                        }
+                      >
+                        {transaction.transactionType}
                       </Badge>
                     </TableCell>
-                  ) : null}
-                  <TableCell>
-                    INR {numeral(transaction.amount).format("0,0[.]00")}
-                  </TableCell>
-                  {showRowActions ? (
-                    <TableCell className="text-right">
-                      {transaction.canManage ? (
-                        <TransactionRowActionsClient
-                          transactionId={transaction.id}
-                        />
-                      ) : null}
+                    <TableCell>{transaction.category}</TableCell>
+                    {scope === "personal" ? (
+                      <TableCell>
+                        {transaction.historyLabel === "Society" ? (
+                          <Badge variant="secondary">Society</Badge>
+                        ) : isFamilyTransferTx ? (
+                          <Badge variant="outline">Family</Badge>
+                        ) : null}
+                      </TableCell>
+                    ) : null}
+                    {scope === "family" ? (
+                      <TableCell>
+                        <Badge variant="default">
+                          {transaction.historyLabel || "Society"}
+                        </Badge>
+                      </TableCell>
+                    ) : null}
+                    <TableCell>
+                      INR {numeral(transaction.amount).format("0,0[.]00")}
                     </TableCell>
-                  ) : null}
-                </TableRow>
-              ))}
+                    {showRowActions ? (
+                      <TableCell className="text-right">
+                        {transaction.canManage &&
+                        !(
+                          scope === "personal" &&
+                          (transaction.historyLabel === "Society" ||
+                            isFamilyTransferTx)
+                        ) ? (
+                          <TransactionRowActionsClient
+                            transactionId={transaction.id}
+                            deleteFirst
+                          />
+                        ) : null}
+                      </TableCell>
+                    ) : null}
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         )}

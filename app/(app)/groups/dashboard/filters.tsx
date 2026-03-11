@@ -36,12 +36,12 @@ export default function GroupFilters({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
       <Select
         value={selectedGroupId}
         onValueChange={(value) => updateQuery(value, year)}
       >
-        <SelectTrigger className="w-[240px]">
+        <SelectTrigger className="w-full sm:w-[240px]">
           <SelectValue placeholder="Select Society" />
         </SelectTrigger>
         <SelectContent>
@@ -57,7 +57,7 @@ export default function GroupFilters({
         value={String(year)}
         onValueChange={(value) => updateQuery(selectedGroupId, Number(value))}
       >
-        <SelectTrigger className="w-[120px]">
+        <SelectTrigger className="w-full sm:w-[120px]">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

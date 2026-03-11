@@ -9,21 +9,38 @@ import AuthButtons from "./auth-buttons";
 import { connectDB } from "@/lib/db";
 import { getFamilyAccessByEmail } from "@/lib/family-access";
 import { getGroupAccessByEmail } from "@/lib/group-access";
+import { isProfileComplete } from "@/lib/profile";
+import { User } from "@/models/User";
+import { redirect } from "next/navigation";
 
 export default async function HomePage() {
   const session = await auth();
   let canCreateGroup = false;
-  let hasOwnedGroups = false;
+  let hasSocietyMembership = false;
   let canCreateFamily = false;
   let hasOwnedFamily = false;
   let hasFamilyMembership = false;
 
   if (session?.user?.email) {
     await connectDB();
+    const user = await User.findOne({ email: session.user.email }).lean();
+    if (
+      !isProfileComplete({
+        name: user?.name ?? "",
+        email: session.user.email,
+        phone: user?.phone ?? "",
+        image: user?.image ?? "",
+      })
+    ) {
+      redirect("/complete-profile");
+    }
+
     const groupAccess = await getGroupAccessByEmail(session.user.email);
     const familyAccess = await getFamilyAccessByEmail(session.user.email);
     canCreateGroup = groupAccess?.canCreateGroup ?? false;
-    hasOwnedGroups = groupAccess?.hasOwnedGroups ?? false;
+    hasSocietyMembership =
+      (groupAccess?.hasOwnedGroups ?? false) ||
+      (groupAccess?.isMemberInOtherGroup ?? false);
     canCreateFamily = familyAccess?.canCreateFamily ?? false;
     hasOwnedFamily = familyAccess?.hasOwnedFamily ?? false;
     hasFamilyMembership = familyAccess?.hasFamilyMembership ?? false;
@@ -31,45 +48,90 @@ export default async function HomePage() {
 
   return (
     <>
-      <nav className="relative z-40 bg-primary p-8 text-white h-20 flex items-center justify-between">
-        <Link href="/" className="text-2xl font-bold gap-2 flex items-center">
-          <LandmarkIcon className="text-lime-500" />
-          PinTrust
-        </Link>
-
-        <div className="flex items-center gap-3">
+      <nav className="relative z-40 bg-primary text-white">
+        <div className="mx-auto flex w-full max-w-7xl items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <Link
             href="/"
-            className="rounded-lg border border-white/25 px-3 py-2 text-sm font-semibold hover:bg-white/10"
+            className="mr-auto flex items-center gap-2 text-xl font-bold sm:text-2xl"
           >
-            Home
+            <LandmarkIcon className="text-lime-500" />
+            PinTrust
           </Link>
-          <Link
-            href="/pricing"
-            className="rounded-lg border border-white/25 px-3 py-2 text-sm font-semibold hover:bg-white/10"
-          >
-            Pricing
-          </Link>
-          {canCreateGroup ? (
+
+          <div className="hidden items-center gap-3 md:flex">
             <Link
-              href="/groups/new"
+              href="/"
               className="rounded-lg border border-white/25 px-3 py-2 text-sm font-semibold hover:bg-white/10"
             >
-              Create Society
+              Home
             </Link>
-          ) : null}
-          {canCreateFamily ? (
             <Link
-              href="/groups/new?mode=family"
+              href="/pricing"
               className="rounded-lg border border-white/25 px-3 py-2 text-sm font-semibold hover:bg-white/10"
             >
-              Create Family
+              Upgrade Plan
             </Link>
-          ) : null}
-          <AuthButtons
-            showGroupDashboard={hasOwnedGroups}
-            showFamilyDashboard={hasOwnedFamily}
-          />
+            {canCreateGroup ? (
+              <Link
+                href="/groups/new"
+                className="rounded-lg border border-white/25 px-3 py-2 text-sm font-semibold hover:bg-white/10"
+              >
+                Create Society
+              </Link>
+            ) : null}
+            {canCreateFamily ? (
+              <Link
+                href="/groups/new?mode=family"
+                className="rounded-lg border border-white/25 px-3 py-2 text-sm font-semibold hover:bg-white/10"
+              >
+                Create Family
+              </Link>
+            ) : null}
+            <AuthButtons
+              showGroupDashboard={hasSocietyMembership}
+              showFamilyDashboard={hasFamilyMembership}
+            />
+          </div>
+
+          <details className="relative ml-auto md:hidden">
+            <summary className="cursor-pointer list-none rounded-lg border border-white/25 px-3 py-2 text-xs font-semibold hover:bg-white/10 [&::-webkit-details-marker]:hidden">
+              Menu
+            </summary>
+            <div className="absolute right-0 top-11 z-50 flex w-64 flex-col gap-2 rounded-xl border border-white/15 bg-slate-950/95 p-3 shadow-2xl">
+              <Link
+                href="/"
+                className="rounded-lg border border-white/15 px-3 py-2 text-sm font-semibold hover:bg-white/10"
+              >
+                Home
+              </Link>
+              <Link
+                href="/pricing"
+                className="rounded-lg border border-white/15 px-3 py-2 text-sm font-semibold hover:bg-white/10"
+              >
+                Upgrade Plan
+              </Link>
+              {canCreateGroup ? (
+                <Link
+                  href="/groups/new"
+                  className="rounded-lg border border-white/15 px-3 py-2 text-sm font-semibold hover:bg-white/10"
+                >
+                  Create Society
+                </Link>
+              ) : null}
+              {canCreateFamily ? (
+                <Link
+                  href="/groups/new?mode=family"
+                  className="rounded-lg border border-white/15 px-3 py-2 text-sm font-semibold hover:bg-white/10"
+                >
+                  Create Family
+                </Link>
+              ) : null}
+              <AuthButtons
+                showGroupDashboard={hasSocietyMembership}
+                showFamilyDashboard={hasFamilyMembership}
+              />
+            </div>
+          </details>
         </div>
       </nav>
 
@@ -78,12 +140,12 @@ export default async function HomePage() {
         <div className="pointer-events-none absolute -right-20 top-40 h-80 w-80 rounded-full bg-cyan-500/20 blur-3xl" />
         <div className="pointer-events-none absolute left-1/3 top-96 h-96 w-96 rounded-full bg-orange-500/10 blur-3xl" />
 
-        <section className="relative mx-auto grid w-full max-w-6xl gap-10 px-6 pb-16 pt-14 sm:px-10 lg:grid-cols-2 lg:items-center lg:pt-20">
+        <section className="relative mx-auto grid w-full max-w-6xl gap-10 px-4 pb-16 pt-14 sm:px-8 lg:grid-cols-2 lg:items-center lg:pt-20">
           <div>
             <p className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-lime-300">
               Smart Finance System
             </p>
-            <h1 className="mt-6 text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl">
+            <h1 className="mt-6 text-3xl font-bold leading-tight sm:text-5xl lg:text-6xl">
               One place to manage personal and society money.
             </h1>
             <p className="mt-5 max-w-xl text-base text-slate-300 sm:text-lg">
@@ -126,7 +188,7 @@ export default async function HomePage() {
                     href="/pricing"
                     className="inline-flex items-center gap-2 rounded-xl border border-lime-300/30 bg-lime-300/10 px-5 py-3 text-sm font-semibold text-lime-100 transition hover:bg-lime-300/20"
                   >
-                    Manage Plan
+                    Upgrade Plan
                   </Link>
                 </>
               ) : (
@@ -148,7 +210,7 @@ export default async function HomePage() {
                     href="/pricing"
                     className="inline-flex items-center gap-2 rounded-xl border border-lime-300/30 bg-lime-300/10 px-5 py-3 text-sm font-semibold text-lime-100 transition hover:bg-lime-300/20"
                   >
-                    View Pricing
+                    Upgrade Plan
                   </Link>
                 </>
               )}
@@ -167,7 +229,7 @@ export default async function HomePage() {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white/15 bg-white/5 p-6 shadow-2xl backdrop-blur-xl">
+          <div className="rounded-3xl border border-white/15 bg-white/5 p-5 shadow-2xl backdrop-blur-xl sm:p-6">
             <p className="text-sm text-slate-300">Cash Flow</p>
             <div className="mt-4 rounded-2xl border border-white/15 bg-slate-900/70 p-4">
               <div className="flex items-start justify-between">

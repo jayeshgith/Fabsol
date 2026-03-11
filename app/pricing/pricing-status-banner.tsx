@@ -13,7 +13,7 @@ export default function PricingStatusBanner() {
 
   if (status === "success") {
     return (
-      <div className="mb-8 rounded-xl border border-emerald-400/40 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">
+      <div className="mb-8 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
         Payment successful. Your {plan === "pro" ? "Pro" : "Base"} plan is now
         active.
       </div>
@@ -21,7 +21,7 @@ export default function PricingStatusBanner() {
   }
 
   return (
-    <div className="mb-8 rounded-xl border border-amber-300/35 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
+    <div className="mb-8 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
       Checkout was cancelled. You can select a plan anytime.
     </div>
   );

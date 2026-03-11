@@ -158,7 +158,7 @@ export default function EditFamilyMembersForm({
             Manage members for <span className="font-semibold">{familyName}</span>.
           </p>
         </div>
-        <Button variant="outline" asChild>
+        <Button variant="outline" asChild className="w-full sm:w-auto">
           <Link href="/family/dashboard">Back to Family Dashboard</Link>
         </Button>
       </div>
@@ -169,16 +169,20 @@ export default function EditFamilyMembersForm({
             Search User By Name or Phone
           </p>
           <form onSubmit={onSearch}>
-            <div className="flex w-full max-w-xl items-center space-x-2">
+            <div className="flex w-full max-w-xl flex-col gap-2 sm:flex-row sm:items-center">
               <Input
                 name="query"
                 placeholder="Name or phone number"
                 type="text"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                className="md:w-60 lg:w-[420px]"
+                className="w-full sm:w-80 lg:w-[420px]"
               />
-              <Button type="submit" disabled={searching} className="px-4">
+              <Button
+                type="submit"
+                disabled={searching}
+                className="w-full px-4 sm:w-auto"
+              >
                 <Search className="h-4 w-4" />
               </Button>
             </div>
@@ -195,7 +199,7 @@ export default function EditFamilyMembersForm({
             return (
               <div
                 key={user.id}
-                className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3"
+                className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-slate-900">
@@ -210,7 +214,7 @@ export default function EditFamilyMembersForm({
                   variant={isAdded ? "secondary" : "default"}
                   disabled={isAdded}
                   onClick={() => addMember(user)}
-                  className="gap-1.5"
+                  className="w-full gap-1.5 sm:w-auto"
                 >
                   <UserPlus className="h-4 w-4" />
                   {isAdded ? "Added" : "Add Member"}
@@ -234,7 +238,7 @@ export default function EditFamilyMembersForm({
                 Current Members ({members.length})
               </Button>
             </PopoverTrigger>
-            <PopoverContent align="start" className="w-80">
+            <PopoverContent align="start" className="w-[min(20rem,calc(100vw-2rem))]">
               <div className="space-y-2">
                 <p className="text-sm font-semibold text-slate-900">
                   Family Members
@@ -273,7 +277,12 @@ export default function EditFamilyMembersForm({
             </PopoverContent>
           </Popover>
 
-          <Button type="button" onClick={onSaveChanges} disabled={saving}>
+          <Button
+            type="button"
+            onClick={onSaveChanges}
+            disabled={saving}
+            className="w-full sm:w-auto"
+          >
             {saving ? "Saving..." : "Save Members"}
           </Button>
         </div>

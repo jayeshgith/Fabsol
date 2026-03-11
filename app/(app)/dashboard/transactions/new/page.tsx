@@ -79,10 +79,10 @@ const NewTransactionPage = async ({
   });
 
   return (
-    <div className="max-w-7xl mx-auto py-10">
+    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
       <TransactionBackButton fallbackHref={transactionsHref} />
 
-      <Card className="mt-6 p-6 max-w-3xl">
+      <Card className="mt-6 w-full max-w-3xl p-4 sm:p-6">
         <CardContent className="pt-6">
           <NewTransactionForm
             familyGroups={familyGroups}

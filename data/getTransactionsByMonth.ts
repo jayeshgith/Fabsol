@@ -5,7 +5,6 @@ import { Group } from "@/models/Group";
 import { Transaction } from "@/models/Transaction";
 import { User } from "@/models/User";
 import {
-  getPersonalAccountScopeFilter,
   getSocietyAccountScopeFilter,
   toAccountScopeLabel,
 } from "@/lib/account-scope";
@@ -54,11 +53,10 @@ export async function getTransactionsByMonth({
 }) {
  
   const session = await auth();
+  const userEmail = String(session?.user?.email ?? "").trim();
+  if (!userEmail) return [];
 
-  if (!session?.user) return [];
-
-  
-  const userId = session.user.email!;
+  const userId = userEmail;
 
 
   await connectDB();
@@ -178,22 +176,50 @@ export async function getTransactionsByMonth({
     }));
   }
 
+  const currentUser = await User.findOne({ email: userId }).select("_id").lean();
+  const currentUserId = currentUser?._id ? String(currentUser._id) : "";
+  const activeGroupIds = currentUserId
+    ? (
+        await Group.find({
+          $or: [{ ownerId: currentUserId }, { memberIds: currentUserId }],
+        })
+          .select("_id")
+          .lean()
+      ).map((group) => String(group._id))
+    : [];
+
+  const personalScopeClauses: Record<string, unknown>[] = [
+    { accountScope: "personal" },
+    { accountScope: { $exists: false } },
+  ];
+
+  if (activeGroupIds.length > 0) {
+    personalScopeClauses.push({
+      accountScope: { $in: ["family", "society"] },
+      groupId: { $in: activeGroupIds },
+    });
+  }
+
   const transactions = await Transaction.find({
     userId,
-    ...getPersonalAccountScopeFilter(),
+    $or: personalScopeClauses,
     ...dateFilter,
   })
     .sort({ transactionDate: -1 })
     .lean();
 
-  return transactions.map((t) => ({
+  const ownTransactions = transactions.filter(
+    (transaction) => String(transaction.userId ?? "").trim() === userId,
+  );
+
+  return ownTransactions.map((t) => ({
     id: t._id.toString(),
     description: t.description,
     amount: t.amount,
     transactionDate: t.transactionDate,
     category: getCategoryName(t.category),
     transactionType: getTransactionType(t.transactionType, t.category),
-    canManage: true,
+    canManage: String(t.userId ?? "") === userId,
     historyLabel: toAccountScopeLabel(t.accountScope),
     memberEmail: "",
     memberName: "",

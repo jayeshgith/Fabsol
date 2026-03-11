@@ -31,7 +31,7 @@ export default function ResetPasswordPage() {
           setError("Invalid or expired reset link. Please request a new one.");
         }
         setVerifying(false);
-      } catch (err) {
+      } catch {
         setError("Error verifying token. Please try again.");
         setVerifying(false);
       }
@@ -76,7 +76,7 @@ export default function ResetPasswordPage() {
       setTimeout(() => {
         router.push("/login");
       }, 2000);
-    } catch (err) {
+    } catch {
       setError("An error occurred. Please try again.");
     } finally {
       setLoading(false);
@@ -87,7 +87,7 @@ export default function ResetPasswordPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4">
         <div className="w-full max-w-md">
-          <div className="rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 p-8 shadow-2xl text-center">
+          <div className="rounded-2xl border border-white/20 bg-white/10 p-5 text-center shadow-2xl backdrop-blur-xl sm:p-8">
             <svg
               className="w-8 h-8 animate-spin text-blue-400 mx-auto"
               fill="none"
@@ -114,9 +114,9 @@ export default function ResetPasswordPage() {
       <div className="absolute top-0 -left-40 w-80 h-80 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full blur-3xl animate-pulse" />
       <div className="absolute bottom-0 -right-40 w-80 h-80 bg-gradient-to-tl from-cyan-500/20 to-blue-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
 
-      <div className="w-full max-w-md relative z-10">
+      <div className="relative z-10 w-full max-w-md">
         
-        <div className="rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 p-8 shadow-2xl">
+        <div className="rounded-2xl border border-white/20 bg-white/10 p-5 shadow-2xl backdrop-blur-xl sm:p-8">
          
           <div className="text-center mb-8">
             <div className="inline-block p-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full mb-4 shadow-lg">
@@ -132,7 +132,7 @@ export default function ResetPasswordPage() {
                 />
               </svg>
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">
+            <h1 className="mb-2 text-2xl font-bold text-white sm:text-3xl">
              Create New Password
             </h1>
             <p className="text-gray-300 text-sm">
@@ -259,7 +259,7 @@ export default function ResetPasswordPage() {
                 </p>
                 <ul className="text-xs text-blue-300 space-y-1">
                   <li className={password.length >= 6 ? "text-green-400" : ""}>
-                    ✓ At least 6 characters
+                    At least 6 characters
                   </li>
                   <li
                     className={
@@ -268,7 +268,7 @@ export default function ResetPasswordPage() {
                         : ""
                     }
                   >
-                    ✓ Passwords match
+                    Passwords match
                   </li>
                 </ul>
               </div>

@@ -107,10 +107,10 @@ const DashboardPage = async ({
     : null;
 
   return (
-    <div className="max-w-7xl mx-auto py-5">
+    <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6">
       <div className="flex flex-wrap items-center justify-between gap-3 pb-5">
-        <h1 className="text-4xl font-semibold">Dashboard</h1>
-        <div className="flex items-center gap-2">
+        <h1 className="text-3xl font-semibold sm:text-4xl">Dashboard</h1>
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
           {hasSocietyMembership || hasFamilyMembership ? (
             <TransactionTypeFilter
               value={selectedScope}
@@ -119,7 +119,7 @@ const DashboardPage = async ({
             />
           ) : null}
           {hasOwnedGroups ? (
-            <Button variant="outline" asChild className="gap-2">
+            <Button variant="outline" asChild className="w-full gap-2 sm:w-auto">
               <Link href="/groups/dashboard">
                 <UsersRound className="h-4 w-4" />
                 Society Dashboard
@@ -127,7 +127,7 @@ const DashboardPage = async ({
             </Button>
           ) : null}
           {hasFamilyDashboard ? (
-            <Button variant="outline" asChild className="gap-2">
+            <Button variant="outline" asChild className="w-full gap-2 sm:w-auto">
               <Link href="/family/dashboard">
                 <UsersRound className="h-4 w-4" />
                 Family Dashboard

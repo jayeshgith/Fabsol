@@ -23,14 +23,14 @@ const CashFlow = async ({
   return (
     <Card className="mb-8">
       <CardHeader>
-        <CardTitle className="flex justify-between">
+        <CardTitle className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <span>{title}</span>
           {showFilters ? (
             <CashFlowFiltersClient year={year} yearsRange={yearsRange} />
           ) : null}
         </CardTitle>
       </CardHeader>
-      <CardContent className="grid grid-cols-[1fr_250px]">
+      <CardContent className="grid gap-4 md:grid-cols-[minmax(0,1fr)_250px]">
         <CashFlowContentClient annualCashflow={cashflow} />
       </CardContent>
     </Card>

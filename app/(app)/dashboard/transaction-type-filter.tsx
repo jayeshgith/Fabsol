@@ -45,7 +45,7 @@ export default function TransactionTypeFilter({
   }
 
   return (
-    <div className="w-[180px]">
+    <div className="w-full sm:w-[180px]">
       <p className="mb-1 text-xs text-slate-500">Transaction Type</p>
       <Select value={value} onValueChange={onValueChange}>
         <SelectTrigger>

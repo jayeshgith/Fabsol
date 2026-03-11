@@ -7,6 +7,7 @@ import { toast } from "sonner";
 type PricingCheckoutButtonProps = {
   planId: "base" | "pro";
   cta: string;
+  featured?: boolean;
 };
 
 type CheckoutResponse = {
@@ -18,6 +19,7 @@ type CheckoutResponse = {
 export default function PricingCheckoutButton({
   planId,
   cta,
+  featured = false,
 }: PricingCheckoutButtonProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -58,7 +60,11 @@ export default function PricingCheckoutButton({
       type="button"
       onClick={handleCheckout}
       disabled={isLoading}
-      className="mt-7 w-full rounded-xl bg-white/10 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-60"
+      className={`mt-7 w-full rounded-xl px-5 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+        featured
+          ? "bg-gradient-to-r from-emerald-300 to-cyan-300 text-slate-950 hover:from-emerald-200 hover:to-cyan-200"
+          : "bg-slate-900 text-white hover:bg-slate-800"
+      }`}
     >
       {isLoading ? "Redirecting..." : cta}
     </button>

@@ -35,7 +35,7 @@ export default function ForgotPasswordPage() {
       if (data.previewUrl) setPreviewUrl(data.previewUrl);
       setSubmitted(true);
       setEmail("");
-    } catch (err) {
+    } catch {
       setError("An error occurred. Please try again.");
     } finally {
       setLoading(false);
@@ -47,8 +47,8 @@ export default function ForgotPasswordPage() {
       <div className="absolute top-0 -left-40 w-80 h-80 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full blur-3xl animate-pulse" />
       <div className="absolute bottom-0 -right-40 w-80 h-80 bg-gradient-to-tl from-cyan-500/20 to-blue-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
 
-      <div className="w-full max-w-md relative z-10">
-        <div className="rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 p-8 shadow-2xl">
+      <div className="relative z-10 w-full max-w-md">
+        <div className="rounded-2xl border border-white/20 bg-white/10 p-5 shadow-2xl backdrop-blur-xl sm:p-8">
           <div className="text-center mb-8">
             <div className="inline-block p-3 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full mb-4 shadow-lg">
               <svg
@@ -60,7 +60,7 @@ export default function ForgotPasswordPage() {
                 <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z" />
               </svg>
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">
+            <h1 className="mb-2 text-2xl font-bold text-white sm:text-3xl">
               Reset Password
             </h1>
             <p className="text-gray-300 text-sm">

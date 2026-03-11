@@ -13,10 +13,26 @@ import {
   isSocietyAccountScope,
   toCanonicalStoredAccountScope,
 } from "@/lib/account-scope";
+import { getSocietyYearBalanceSummary, toInrAmount } from "@/lib/society-balance";
 
 const updateSchema = transactionFormSchema.safeExtend({
   id: z.string().min(1, "Missing transaction id"),
 });
+
+function isFamilyTransferTransaction(transaction: {
+  category?: unknown;
+  description?: unknown;
+}) {
+  const normalizedCategory = String(transaction.category ?? "").trim().toLowerCase();
+  const normalizedDescription = String(transaction.description ?? "").trim().toLowerCase();
+
+  return (
+    normalizedCategory === "paid money" ||
+    normalizedCategory === "money transfer" ||
+    normalizedDescription.startsWith("paid money:") ||
+    normalizedDescription.startsWith("family money transfer")
+  );
+}
 
 async function canManageAsGroupOwner(params: {
   actorId: string;
@@ -91,7 +107,7 @@ export async function updateTransactionAction(data: unknown) {
     }
 
     const existingTransaction = await Transaction.findById(parsed.id)
-      .select("userId accountScope groupId")
+      .select("userId accountScope groupId category description")
       .lean();
 
     if (!existingTransaction) {
@@ -99,6 +115,19 @@ export async function updateTransactionAction(data: unknown) {
     }
 
     const transactionUserEmail = String(existingTransaction.userId ?? "").trim();
+    const canManageAsFamilyOwnerForUser = await canManageAsFamilyOwner({
+      actorId: String(actor._id),
+      transactionUserEmail,
+    });
+    const isFamilyTransferTx = isFamilyTransferTransaction(existingTransaction);
+
+    if (isFamilyTransferTx && !canManageAsFamilyOwnerForUser) {
+      return {
+        success: false,
+        message: "Only family admin can update money transfer transactions.",
+      };
+    }
+
     const isSelfTransaction = transactionUserEmail === actorEmail;
     const isSocietyTransaction = isSocietyAccountScope(existingTransaction.accountScope);
     const canManageByGroupOwnership =
@@ -113,10 +142,7 @@ export async function updateTransactionAction(data: unknown) {
     const canManageByFamilyOwnership =
       !isSelfTransaction &&
       !isSocietyTransaction &&
-      (await canManageAsFamilyOwner({
-        actorId: String(actor._id),
-        transactionUserEmail,
-      }));
+      canManageAsFamilyOwnerForUser;
 
     if (!isSelfTransaction && !canManageByGroupOwnership && !canManageByFamilyOwnership) {
       return {
@@ -155,6 +181,21 @@ export async function updateTransactionAction(data: unknown) {
           memberGroups.find((group) => String(group._id) === requestedGroupId) ??
           memberGroups[0];
         groupId = String(selectedGroup._id);
+      }
+
+      if (parsed.transactionType === "expense") {
+        const { remaining } = await getSocietyYearBalanceSummary({
+          groupId,
+          transactionDate: parsed.transactionDate,
+          excludeTransactionId: parsed.id,
+        });
+
+        if (parsed.amount > remaining) {
+          return {
+            success: false,
+            message: `You cannot update this transaction. Remaining society amount is ${toInrAmount(remaining)}, but entered expense is ${toInrAmount(parsed.amount)}.`,
+          };
+        }
       }
     }
 
@@ -209,13 +250,26 @@ export async function deleteTransactionAction(transactionId: string) {
     }
 
     const existingTransaction = await Transaction.findById(transactionId)
-      .select("userId accountScope groupId")
+      .select("userId accountScope groupId category description")
       .lean();
     if (!existingTransaction) {
       return { success: false, message: "Transaction not found." };
     }
 
     const transactionUserEmail = String(existingTransaction.userId ?? "").trim();
+    const canManageAsFamilyOwnerForUser = await canManageAsFamilyOwner({
+      actorId: String(actor._id),
+      transactionUserEmail,
+    });
+    const isFamilyTransferTx = isFamilyTransferTransaction(existingTransaction);
+
+    if (isFamilyTransferTx && !canManageAsFamilyOwnerForUser) {
+      return {
+        success: false,
+        message: "Only family admin can delete money transfer transactions.",
+      };
+    }
+
     const isSelfTransaction = transactionUserEmail === actorEmail;
     const isSocietyTransaction = isSocietyAccountScope(existingTransaction.accountScope);
     const canManageByGroupOwnership =
@@ -230,10 +284,7 @@ export async function deleteTransactionAction(transactionId: string) {
     const canManageByFamilyOwnership =
       !isSelfTransaction &&
       !isSocietyTransaction &&
-      (await canManageAsFamilyOwner({
-        actorId: String(actor._id),
-        transactionUserEmail,
-      }));
+      canManageAsFamilyOwnerForUser;
 
     if (!isSelfTransaction && !canManageByGroupOwnership && !canManageByFamilyOwnership) {
       return {

@@ -5,20 +5,11 @@ import { Group } from "@/models/Group";
 import { Transaction } from "@/models/Transaction";
 import { User } from "@/models/User";
 import {
-  getPersonalAccountScopeFilter,
   getSocietyAccountScopeFilter,
   toAccountScopeLabel,
 } from "@/lib/account-scope";
 
 type TransactionScope = "personal" | "family";
-
-function getScopeFilter(scope: TransactionScope) {
-  if (scope === "family") {
-    return getSocietyAccountScopeFilter();
-  }
-
-  return getPersonalAccountScopeFilter();
-}
 
 function getCategoryName(category: unknown): string {
   if (typeof category === "string" && category.trim()) {
@@ -60,11 +51,10 @@ export async function getRecentTransactions(
 ) {
   
   const session = await auth();
+  const userEmail = String(session?.user?.email ?? "").trim();
+  if (!userEmail) return [];
 
-  if (!session?.user) return [];
-
-
-  const userId = session.user.email!;
+  const userId = userEmail;
 
 
   await connectDB();
@@ -174,13 +164,41 @@ export async function getRecentTransactions(
         String(t.userId ?? "Member"),
     }));
   } else {
+    const currentUser = await User.findOne({ email: userId }).select("_id").lean();
+    const currentUserId = currentUser?._id ? String(currentUser._id) : "";
+    const activeGroupIds = currentUserId
+      ? (
+          await Group.find({
+            $or: [{ ownerId: currentUserId }, { memberIds: currentUserId }],
+          })
+            .select("_id")
+            .lean()
+        ).map((group) => String(group._id))
+      : [];
+
+    const personalScopeClauses: Record<string, unknown>[] = [
+      { accountScope: "personal" },
+      { accountScope: { $exists: false } },
+    ];
+
+    if (activeGroupIds.length > 0) {
+      personalScopeClauses.push({
+        accountScope: { $in: ["family", "society"] },
+        groupId: { $in: activeGroupIds },
+      });
+    }
+
     transactions = await Transaction.find({
       userId,
-      ...getScopeFilter(scope),
+      $or: personalScopeClauses,
     })
       .sort({ transactionDate: -1 })
       .limit(5)
       .lean();
+
+    transactions = transactions.filter(
+      (transaction) => String(transaction.userId ?? "").trim() === userId,
+    );
   }
 
   return transactions.map((t) => ({

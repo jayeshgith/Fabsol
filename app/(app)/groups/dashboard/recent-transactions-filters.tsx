@@ -110,8 +110,8 @@ export default function RecentTransactionsFilters({
   }
 
   return (
-    <div className="flex flex-wrap items-end gap-2">
-      <div className="w-[150px]">
+    <div className="flex w-full flex-wrap items-end gap-2">
+      <div className="w-full sm:w-[150px]">
         <p className="mb-1 text-xs text-slate-500">Transacation Type</p>
         <Select
           value={selectedScope}
@@ -129,7 +129,7 @@ export default function RecentTransactionsFilters({
         </Select>
       </div>
 
-      <div className="w-[170px]">
+      <div className="w-full sm:w-[170px]">
         <p className="mb-1 text-xs text-slate-500">Month</p>
         <Select value={selectedMonth} onValueChange={setSelectedMonth}>
           <SelectTrigger>
@@ -146,7 +146,7 @@ export default function RecentTransactionsFilters({
         </Select>
       </div>
 
-      <div className="w-[120px]">
+      <div className="w-full sm:w-[120px]">
         <p className="mb-1 text-xs text-slate-500">Year</p>
         <Select value={selectedYear} onValueChange={setSelectedYear}>
           <SelectTrigger>
@@ -163,7 +163,7 @@ export default function RecentTransactionsFilters({
         </Select>
       </div>
 
-      <div className="w-[170px]">
+      <div className="w-full sm:w-[170px]">
         <p className="mb-1 text-xs text-slate-500">Date</p>
         <Input
           type="date"
@@ -172,10 +172,15 @@ export default function RecentTransactionsFilters({
         />
       </div>
 
-      <Button type="button" onClick={onApply}>
+      <Button type="button" onClick={onApply} className="w-full sm:w-auto">
         Search
       </Button>
-      <Button type="button" variant="outline" onClick={onClear}>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={onClear}
+        className="w-full sm:w-auto"
+      >
         Clear
       </Button>
     </div>

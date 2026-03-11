@@ -46,11 +46,12 @@ const Filters = ({
     : "/dashboard/transactions";
 
   return (
-    <div className="flex gap-1">
+    <div className="flex w-full flex-wrap gap-2 sm:w-auto">
       <Select
         value={selectedMonth}
-        onValueChange={(newValue) => setSelectedMonth(newValue)}>
-        <SelectTrigger>
+        onValueChange={(newValue) => setSelectedMonth(newValue)}
+      >
+        <SelectTrigger className="w-full sm:w-[170px]">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -64,8 +65,9 @@ const Filters = ({
       </Select>
       <Select
         value={selectedYear}
-        onValueChange={(newValue) => setSelectedYear(newValue)}>
-        <SelectTrigger>
+        onValueChange={(newValue) => setSelectedYear(newValue)}
+      >
+        <SelectTrigger className="w-full sm:w-[140px]">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -77,7 +79,7 @@ const Filters = ({
           ))}
         </SelectContent>
       </Select>
-      <Button asChild>
+      <Button asChild className="w-full sm:w-auto">
         <Link href={href}>Go</Link>
       </Button>
     </div>

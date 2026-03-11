@@ -26,7 +26,6 @@ export function isProfileComplete(profile: {
   return (
     hasValue(profile.name) &&
     hasValue(profile.email) &&
-    isValidTenDigitPhoneNumber(normalizedPhone) &&
-    hasValue(profile.image)
+    isValidTenDigitPhoneNumber(normalizedPhone)
   );
 }
