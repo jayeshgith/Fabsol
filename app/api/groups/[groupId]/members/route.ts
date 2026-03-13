@@ -75,7 +75,7 @@ export async function PATCH(
     { $set: { memberIds: finalMemberIds } },
   );
 
-  const previousMemberIds = Array.isArray(group.memberIds)
+  const previousMemberIds: string[] = Array.isArray(group.memberIds)
     ? group.memberIds.map((id: unknown) => String(id))
     : [];
 

@@ -54,11 +54,21 @@ const NewTransactionForm = ({
     }
   };
 
+  const handleCancel = (accountScope: "personal" | "family") => {
+    if (accountScope === "family") {
+      router.push("/dashboard?scope=society");
+      return;
+    }
+
+    router.push("/dashboard");
+  };
+
   return (
     <TransactionForm
       familyGroups={familyGroups}
       categories={categories}
       onsubmit={handleSubmit}
+      onCancel={handleCancel}
       showDynamicTitle
       defaultValues={{
         accountScope: defaultAccountScope,

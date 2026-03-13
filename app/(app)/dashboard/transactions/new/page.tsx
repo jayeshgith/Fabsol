@@ -4,11 +4,48 @@ import NewTransactionForm from "./new-transaction-form";
 
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
+import { DEFAULT_TRANSACTION_CATEGORIES } from "@/lib/default-categories";
 import { Category } from "@/models/Category";
 import { Group } from "@/models/Group";
 import { User } from "@/models/User";
 import type { Category as CategoryType } from "@/types/Category";
 import TransactionBackButton from "../transaction-back-button";
+
+function normalizeCategoryScope(scope: unknown): CategoryType["scope"] {
+  if (typeof scope !== "string") {
+    return undefined;
+  }
+
+  const normalized = scope.trim().toLowerCase();
+
+  if (normalized === "family" || normalized === "society") {
+    return "family";
+  }
+
+  if (normalized === "personal" || normalized === "social") {
+    return normalized;
+  }
+
+  return undefined;
+}
+
+function mergeUniqueCategories(categories: CategoryType[]): CategoryType[] {
+  const uniqueByKey = new Map<string, CategoryType>();
+
+  for (const category of categories) {
+    const name = String(category.name ?? "").trim();
+    if (!name) {
+      continue;
+    }
+
+    const key = `${category.type}:${category.scope ?? "all"}:${name.toLowerCase()}`;
+    uniqueByKey.set(key, { ...category, name });
+  }
+
+  return Array.from(uniqueByKey.values()).sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
+}
 
 const NewTransactionPage = async ({
   searchParams,
@@ -53,8 +90,9 @@ const NewTransactionPage = async ({
     .sort({ name: 1 })
     .lean();
 
-  const categories: CategoryType[] = categoriesRaw.flatMap((category) => {
-    if (category.type !== "income" && category.type !== "expense") {
+  const dbCategories: CategoryType[] = categoriesRaw.flatMap((category) => {
+    const type = String(category.type ?? "").trim().toLowerCase();
+    if (type !== "income" && type !== "expense") {
       return [];
     }
 
@@ -67,16 +105,15 @@ const NewTransactionPage = async ({
       {
         _id: String(category._id),
         name,
-        type: category.type,
-        scope:
-          category.scope === "personal" ||
-          category.scope === "family" ||
-          category.scope === "social"
-            ? category.scope
-            : undefined,
+        type,
+        scope: normalizeCategoryScope(category.scope),
       },
     ];
   });
+  const categories = mergeUniqueCategories([
+    ...DEFAULT_TRANSACTION_CATEGORIES,
+    ...dbCategories,
+  ]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">

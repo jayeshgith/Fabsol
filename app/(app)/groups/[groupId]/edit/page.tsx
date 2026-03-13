@@ -42,7 +42,7 @@ export default async function EditGroupPage({
     redirect("/dashboard");
   }
 
-  const memberIds = Array.isArray(group.memberIds)
+  const memberIds: string[] = Array.isArray(group.memberIds)
     ? group.memberIds.map((id: unknown) => String(id))
     : [];
 
@@ -52,7 +52,7 @@ export default async function EditGroupPage({
 
   const usersById = new Map(users.map((user) => [String(user._id), user]));
   const orderedMembers: GroupMember[] = memberIds
-    .map((id) => {
+    .map((id: string) => {
       const user = usersById.get(id);
       if (!user) return null;
 

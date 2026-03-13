@@ -41,6 +41,7 @@ type Props = {
   familyGroups: FamilyGroup[];
   categories?: CategoryOption[];
   onsubmit: (data: z.input<typeof transactionFormSchema>) => Promise<void>;
+  onCancel?: (accountScope: "personal" | "family") => void;
   showDynamicTitle?: boolean;
   defaultValues?: Partial<z.input<typeof transactionFormSchema>>;
 };
@@ -49,6 +50,7 @@ const TransactionForm = ({
   familyGroups,
   categories = [],
   onsubmit,
+  onCancel,
   showDynamicTitle = false,
   defaultValues,
 }: Props) => {
@@ -370,7 +372,20 @@ const TransactionForm = ({
               );
             }}
           />
-          <Button type="submit">Submit</Button>
+          <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+            {onCancel ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  onCancel(accountScope === "family" ? "family" : "personal")
+                }
+              >
+                Cancel
+              </Button>
+            ) : null}
+            <Button type="submit">Submit</Button>
+          </div>
         </fieldset>
       </form>
     </Form>
